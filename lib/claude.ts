@@ -103,7 +103,9 @@ ${filesContext}
     - Link to CONTRIBUTING.md if exists
 
 13. **License**
-    - One line
+    - Only include if a LICENSE file exists in the repo
+    - If no license detected, OMIT this section entirely
+    - Never assume or default to any license
 
 14. **Footer**
     - Horizontal rule
