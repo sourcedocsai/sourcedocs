@@ -16,10 +16,7 @@ export async function generateReadme(repoData: {
     .map(f => `### ${f.path}\n\`\`\`\n${f.content}\n\`\`\``)
     .join('\n\n');
 
-  const prompt = `You are a world-class technical writer who creates READMEs that developers LOVE. Your READMEs have personality, clarity, and make people excited to use the project.
-
-## Your Mission
-Create a README that makes a developer think "wow, this is exactly what I needed" within 5 seconds of landing on the repo.
+  const prompt = `You are a world-class technical writer who creates READMEs that developers LOVE. Your READMEs are visually stunning, easy to scan, and make people excited to use the project.
 
 ## Repository Context
 - Name: ${repoData.name}
@@ -35,71 +32,181 @@ ${filesContext}
 
 ---
 
-## README Requirements
+## CRITICAL FORMATTING RULES
 
-### 1. Opening (CRITICAL - This is where you win or lose)
-- Start with a compelling one-liner that explains the VALUE, not the technology
-- Bad: "A Python library for making HTTP requests"
-- Good: "Stop wrestling with HTTP. Just get your data."
-- Add relevant badges: language, license, version if detectable
+### Spacing & Breathing Room
+- Add a BLANK LINE after EVERY heading
+- Add a BLANK LINE before and after EVERY code block
+- Add a BLANK LINE between list items if they contain multiple lines
+- Use horizontal rules (---) to separate major sections
+- Never have more than 3-4 lines of text without a visual break
 
-### 2. The Hook (2-3 sentences max)
-- Answer: "Why does this exist? What pain does it solve?"
-- Be specific and opinionated
-- Make the reader feel understood
+### Visual Hierarchy
+- Use a large, bold project name at the top
+- Follow with a punchy tagline in **bold** or as a blockquote
+- Include badges on their own line, with spacing
+- Use blockquotes (>) for key callouts or the main value prop
 
-### 3. Quick Demo
-- Show a MINIMAL code example (5-10 lines max)
-- The example should produce a satisfying result
-- Add a brief "Here's what that does:" explanation
+### Modern Layout Structure
 
-### 4. Installation
-- One-liner install command
-- Note any prerequisites only if truly necessary
-- Don't over-explain
+1. **Header Section**
+   - Project name (# large heading)
+   - One-line tagline (bold or blockquote)
+   - Badges (on separate line with spacing)
+   - 2-3 sentence hook explaining the value
 
-### 5. Usage Examples (2-3 real scenarios)
-- Each example should solve a REAL problem
-- Use realistic variable names and data
-- Add brief context for each: "When you need to..."
+2. **Quick Visual Demo** (if applicable)
+   - Screenshot, GIF, or code snippet showing the result
+   - Keep it compelling and immediate
 
-### 6. API Reference (only if it's a library)
-- Table format for main functions/methods
-- Params, returns, one-line description
-- Skip if it's an app, not a library
+3. **Table of Contents** (for longer READMEs)
+   - Use if README has 5+ sections
+   - Link format: [Section Name](#section-name)
 
-### 7. Why This Over Alternatives? (Optional but powerful)
-- 2-3 bullet points on what makes this different
-- Be honest, not salesy
+4. **The Problem / Why This Exists**
+   - Use a blockquote or bold callout
+   - Make the reader feel understood
 
-### 8. Contributing + License
-- Keep it brief
-- Link to CONTRIBUTING.md if it exists
+5. **Features or What You Get**
+   - Use a clean table OR
+   - Use emoji bullets for visual scanning
+   - Keep each point to ONE line
 
-## Style Rules
+6. **Quick Start**
+   - Numbered steps (not bullets)
+   - Each step = one action
+   - Code blocks for commands
 
-1. **Voice**: Confident, helpful, slightly casual. Like a smart friend explaining their project.
+7. **Installation**
+   - Prerequisites in a callout box if needed
+   - Single copy-paste command when possible
 
-2. **Formatting**:
-   - Use emojis sparingly (1-2 max, only if it fits the project's vibe)
-   - Prefer tables over long lists
-   - Use \`code formatting\` for anything technical
-   - Break up walls of text
+8. **Usage Examples**
+   - 2-3 real-world scenarios
+   - Use descriptive headers for each: "### Scenario: When you need to..."
+   - Show input AND output when possible
 
-3. **Length**: Shorter than you think. Every line must earn its place.
+9. **API Reference** (if applicable)
+   - Use TABLES, not lists
+   - Columns: Method/Function | Parameters | Returns | Description
 
-4. **Honesty**: If something is limited or experimental, say so. Developers respect honesty.
+10. **Configuration** (if applicable)
+    - Use a table for env vars or options
+    - Columns: Variable | Required | Default | Description
 
-5. **No fluff phrases**:
-   - Delete: "This project aims to...", "Simply run...", "Easy to use..."
-   - Keep: Direct statements that prove value
+11. **Why This Over Alternatives**
+    - Use a comparison table OR
+    - 3 bullet points max
 
-## Output
-Return ONLY the markdown. No preamble, no "Here's the README", just the content.`;
+12. **Contributing**
+    - Keep brief
+    - Link to CONTRIBUTING.md if exists
+
+13. **License**
+    - One line
+
+14. **Footer**
+    - Horizontal rule
+    - Credit line or link to author/org
+
+---
+
+## STYLE GUIDE
+
+### Tone
+- Confident but not arrogant
+- Casual but professional
+- Like a smart friend showing you their project
+
+### Formatting Elements to Use
+- **Bold** for emphasis and key terms
+- \`code\` for anything technical
+- > Blockquotes for important callouts
+- Tables for structured data (always prefer over long lists)
+- Emoji sparingly (🚀 ✨ 📦 ⚡ are safe choices)
+
+### Formatting to AVOID
+- Walls of text (never more than 4 lines without a break)
+- Dense bullet lists (break them up)
+- Headers without spacing after them
+- Code blocks jammed against text
+
+### Example of GOOD Spacing:
+
+\`\`\`markdown
+## Installation
+
+> **Prerequisites:** Node.js 18+ required
+
+Install via npm:
+
+\\\`\\\`\\\`bash
+npm install my-package
+\\\`\\\`\\\`
+
+Or with yarn:
+
+\\\`\\\`\\\`bash
+yarn add my-package
+\\\`\\\`\\\`
+
+---
+
+## Quick Start
+
+1. Import the package
+
+   \\\`\\\`\\\`typescript
+   import { something } from 'my-package'
+   \\\`\\\`\\\`
+
+2. Initialize with your config
+
+   \\\`\\\`\\\`typescript
+   const client = new Something({ apiKey: 'xxx' })
+   \\\`\\\`\\\`
+
+3. Start using it
+
+   \\\`\\\`\\\`typescript
+   const result = await client.doThing()
+   \\\`\\\`\\\`
+\`\`\`
+
+### Example of BAD Spacing (AVOID):
+
+\`\`\`markdown
+## Installation
+Install via npm:
+\\\`\\\`\\\`bash
+npm install my-package
+\\\`\\\`\\\`
+Or with yarn:
+\\\`\\\`\\\`bash
+yarn add my-package
+\\\`\\\`\\\`
+## Quick Start
+1. Import the package
+\\\`\\\`\\\`typescript
+import { something } from 'my-package'
+\\\`\\\`\\\`
+\`\`\`
+
+---
+
+## OUTPUT REQUIREMENTS
+
+1. Return ONLY raw markdown - no preamble, no "Here's the README"
+2. Ensure proper spacing throughout
+3. Make it visually beautiful when rendered on GitHub
+4. Keep total length reasonable (300-600 lines max for complex projects, less for simple ones)
+5. Every section must have breathing room
+
+Generate the README now.`;
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 2500,
+    max_tokens: 4000,
     messages: [{ role: 'user', content: prompt }],
   });
 
@@ -109,3 +216,25 @@ Return ONLY the markdown. No preamble, no "Here's the README", just the content.
   }
   throw new Error('Unexpected response format');
 }
+```
+
+---
+
+## Key Changes
+
+| Before | After |
+|--------|-------|
+| Dense, compact output | Breathing room between sections |
+| No spacing guidance | Explicit spacing rules with examples |
+| Generic structure | Modern layout with visual hierarchy |
+| 2000 tokens max | 4000 tokens (room for proper spacing) |
+| Lists everywhere | Tables for structured data |
+| No visual breaks | Horizontal rules between major sections |
+
+---
+
+## Test It
+
+Save the file, then test with your own repo:
+```
+https://github.com/sourcedocsai/sourcedocs
