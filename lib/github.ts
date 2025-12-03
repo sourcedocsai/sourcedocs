@@ -9,6 +9,7 @@ export interface RepoData {
   name: string;
   description: string | null;
   language: string | null;
+  stars: number;
   files: RepoFile[];
   tree: string[];
 }
@@ -53,41 +54,72 @@ export async function fetchRepoData(owner: string, repo: string): Promise<RepoDa
   // Fetch file tree
   const tree = await fetchTree(owner, repo);
 
-  // Key files to fetch for context
-  const keyFiles = [
+  // Priority files - order matters
+  const priorityFiles = [
+    // Package/config files (understand dependencies & project type)
     'package.json',
     'pyproject.toml',
     'Cargo.toml',
     'go.mod',
-    'requirements.txt',
-    'README.md',
+    'composer.json',
+    'Gemfile',
+    
+    // Entry points (understand what it does)
     'src/index.ts',
-    'src/main.ts',
     'src/index.js',
+    'src/main.ts',
     'src/main.py',
+    'src/lib.rs',
     'main.go',
-    'lib/index.ts',
+    'index.ts',
+    'index.js',
     'app/page.tsx',
+    'lib/index.ts',
+    
+    // Examples (understand usage)
+    'examples/basic.ts',
+    'examples/basic.js',
+    'examples/example.py',
+    'example.js',
+    'example.ts',
+    
+    // Existing docs (understand intent)
+    'README.md',
+    'CONTRIBUTING.md',
   ];
 
   const files: RepoFile[] = [];
   
-  for (const path of keyFiles) {
+  for (const path of priorityFiles) {
     if (tree.includes(path)) {
       const content = await fetchFile(owner, repo, path);
       if (content) {
-        // Limit file size to avoid token explosion
-        files.push({ path, content: content.slice(0, 3000) });
+        files.push({ path, content: content.slice(0, 4000) });
       }
     }
-    if (files.length >= 5) break; // Cap at 5 files
+    if (files.length >= 6) break;
+  }
+
+  // If we didn't find standard files, grab first few code files
+  if (files.length < 3) {
+    const codeExtensions = ['.ts', '.js', '.py', '.go', '.rs', '.rb'];
+    for (const filePath of tree) {
+      if (codeExtensions.some(ext => filePath.endsWith(ext)) && !filePath.includes('test')) {
+        const content = await fetchFile(owner, repo, filePath);
+        if (content) {
+          files.push({ path: filePath, content: content.slice(0, 3000) });
+        }
+        if (files.length >= 6) break;
+      }
+    }
   }
 
   return {
     name: meta.name || repo,
     description: meta.description || null,
     language: meta.language || null,
+    stars: meta.stargazers_count || 0,
     files,
-    tree: tree.slice(0, 50), // First 50 files for structure overview
+    tree: tree.slice(0, 50),
   };
 }
