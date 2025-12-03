@@ -216,25 +216,3 @@ Generate the README now.`;
   }
   throw new Error('Unexpected response format');
 }
-```
-
----
-
-## Key Changes
-
-| Before | After |
-|--------|-------|
-| Dense, compact output | Breathing room between sections |
-| No spacing guidance | Explicit spacing rules with examples |
-| Generic structure | Modern layout with visual hierarchy |
-| 2000 tokens max | 4000 tokens (room for proper spacing) |
-| Lists everywhere | Tables for structured data |
-| No visual breaks | Horizontal rules between major sections |
-
----
-
-## Test It
-
-Save the file, then test with your own repo:
-```
-https://github.com/sourcedocsai/sourcedocs
