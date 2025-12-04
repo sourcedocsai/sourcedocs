@@ -9,7 +9,7 @@ import { track } from '@vercel/analytics';
 type DocType = 'readme' | 'changelog' | 'contributing' | 'license' | 'codeofconduct';
 
 const docConfig = {
-  readme: { endpoint: '/api/generate', label: 'README', key: 'readme' },
+  readme: { endpoint: '/api/readme', label: 'README', key: 'readme' },
   changelog: { endpoint: '/api/changelog', label: 'CHANGELOG', key: 'changelog' },
   contributing: { endpoint: '/api/contributing', label: 'CONTRIBUTING', key: 'contributing' },
   license: { endpoint: '/api/license', label: 'LICENSE', key: 'license' },
