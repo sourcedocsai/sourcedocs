@@ -102,3 +102,52 @@ export async function canGenerate(userId: string): Promise<{ allowed: boolean; u
     limit: user?.is_pro ? -1 : limit, // -1 indicates unlimited
   };
 }
+
+// Survey response type
+export interface SurveyResponse {
+  role: string;
+  team_size: string;
+  doc_frequency: string;
+  important_docs: string[];
+  would_pay: string;
+  feedback?: string;
+  email?: string;
+}
+
+// Save survey response
+export async function saveSurveyResponse(
+  userId: string,
+  response: SurveyResponse
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('survey_responses')
+    .insert({
+      user_id: userId,
+      role: response.role,
+      team_size: response.team_size,
+      doc_frequency: response.doc_frequency,
+      important_docs: response.important_docs,
+      would_pay: response.would_pay,
+      feedback: response.feedback || null,
+      email: response.email || null,
+    });
+
+  if (error) throw error;
+
+  // Mark user as having completed survey
+  await supabaseAdmin
+    .from('users')
+    .update({ survey_completed: true })
+    .eq('id', userId);
+}
+
+// Check if user has completed survey
+export async function hasCompletedSurvey(userId: string): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from('users')
+    .select('survey_completed')
+    .eq('id', userId)
+    .single();
+
+  return data?.survey_completed || false;
+}

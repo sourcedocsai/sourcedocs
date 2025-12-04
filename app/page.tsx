@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { track } from '@vercel/analytics';
+import { SurveyModal } from '@/components/survey-modal';
 
 type DocType = 'readme' | 'changelog' | 'contributing' | 'license' | 'codeofconduct';
 
@@ -26,6 +27,8 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [docType, setDocType] = useState<DocType>('readme');
   const [usage, setUsage] = useState<{ used: number; limit: number } | null>(null);
+  const [showSurvey, setShowSurvey] = useState(false);
+  const [surveyCompleted, setSurveyCompleted] = useState(false);
 
   const handleGenerate = async () => {
     if (!url.trim()) return;
@@ -53,6 +56,11 @@ export default function Home() {
         if (data.upgrade) {
           setError(`Monthly limit reached (${data.usage}/${data.limit}). Upgrade to Pro for unlimited.`);
           setUsage({ used: data.usage, limit: data.limit });
+          
+          // Show survey if not completed
+          if (!surveyCompleted) {
+            setShowSurvey(true);
+          }
         } else {
           setError(data.error || 'Something went wrong');
         }
@@ -87,7 +95,6 @@ export default function Home() {
             <span className="text-sm text-zinc-500">Loading...</span>
           ) : session ? (
             <div className="flex items-center gap-4">
-              {/* Usage indicator */}
               {usage && !isPro && (
                 <span className="text-sm text-zinc-500">
                   {usage.used}/{usage.limit} used
@@ -212,6 +219,17 @@ export default function Home() {
       <footer className="border-t border-zinc-800 px-6 py-6 text-center text-sm text-zinc-500">
         Built by <a href="https://x.com/sourcedocsai" className="text-zinc-400 hover:text-white">@sourcedocsai</a>
       </footer>
+
+      {/* Survey Modal */}
+      {showSurvey && (
+        <SurveyModal
+          onClose={() => setShowSurvey(false)}
+          onComplete={() => {
+            setShowSurvey(false);
+            setSurveyCompleted(true);
+          }}
+        />
+      )}
     </main>
   );
 }
