@@ -8,7 +8,7 @@ export async function generateCodeOfConduct(repoData: {
   name: string;
   owner: string;
 }): Promise<string> {
-  const prompt = `You are generating a CODE_OF_CONDUCT.md file for an open source project.
+  const prompt = - Use placeholder email: [INSERT YOUR EMAIL] (user will replace with their actual contact)
 
 ## Repository: ${repoData.name}
 ## Owner: ${repoData.owner}
@@ -40,7 +40,7 @@ Generate a professional Code of Conduct based on the Contributor Covenant (the i
 
 6. **Enforcement**
    - How to report violations
-   - Use placeholder email: conduct@${repoData.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.dev
+   - Use placeholder email: [INSERT YOUR EMAIL] (user will replace with their actual contact)
    - What happens when reported
 
 7. **Enforcement Guidelines**
