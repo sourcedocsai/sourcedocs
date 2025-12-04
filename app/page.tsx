@@ -6,12 +6,14 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { track } from '@vercel/analytics';
 
-type DocType = 'readme' | 'changelog' | 'contributing';
+type DocType = 'readme' | 'changelog' | 'contributing' | 'license' | 'codeofconduct';
 
 const docConfig = {
   readme: { endpoint: '/api/generate', label: 'README', key: 'readme' },
   changelog: { endpoint: '/api/changelog', label: 'CHANGELOG', key: 'changelog' },
   contributing: { endpoint: '/api/contributing', label: 'CONTRIBUTING', key: 'contributing' },
+  license: { endpoint: '/api/license', label: 'LICENSE', key: 'license' },
+  codeofconduct: { endpoint: '/api/codeofconduct', label: 'CODE OF CONDUCT', key: 'codeofconduct' },
 };
 
 export default function Home() {
@@ -77,12 +79,12 @@ export default function Home() {
         </p>
 
         {/* Document Type Selector */}
-        <div className="flex justify-center gap-2 mb-6">
-          {(['readme', 'changelog', 'contributing'] as DocType[]).map((type) => (
+        <div className="flex flex-wrap justify-center gap-2 mb-6">
+          {(['readme', 'changelog', 'contributing', 'license', 'codeofconduct'] as DocType[]).map((type) => (
             <button
               key={type}
               onClick={() => setDocType(type)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 docType === type
                   ? 'bg-white text-zinc-900'
                   : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
