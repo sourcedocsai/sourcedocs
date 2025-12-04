@@ -174,17 +174,28 @@ export default function Home() {
           </button>
         </div>
 
-        {error && (
-          <div className="mt-4">
-            <p className="text-red-400 text-sm">{error}</p>
-            {error.includes('limit') && (
-              <button className="mt-2 px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium transition-colors">
-                Upgrade to Pro — $8/month
-              </button>
-            )}
-          </div>
-        )}
-        
+	{error && (
+	  <div className="mt-4">
+	    <p className="text-red-400 text-sm">{error}</p>
+	    {error.includes('limit') && (
+	      <div className="flex flex-col items-center gap-2 mt-2">
+		<button className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium transition-colors">
+		  Upgrade to Pro — $8/month
+		</button>
+		{!surveyCompleted && (
+		  <button
+		    onClick={() => setShowSurvey(true)}
+		    className="text-sm text-zinc-400 hover:text-white underline transition-colors"
+		  >
+		    Help us improve → Take 30 second survey
+		  </button>
+		)}
+	      </div>
+	    )}
+	  </div>
+	)}
+
+
         {!session && status !== 'loading' && (
           <p className="mt-4 text-zinc-500 text-sm">
             Sign in with GitHub to generate documentation
