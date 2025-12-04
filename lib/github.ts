@@ -188,9 +188,3 @@ export async function fetchTags(owner: string, repo: string): Promise<string[]> 
     return [];
   }
 }
-B
-B
-B
-B
-B
-
