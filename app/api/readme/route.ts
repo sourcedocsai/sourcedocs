@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { parseGitHubUrl, fetchRepoData } from '@/lib/github';
 import { generateReadme } from '@/lib/claude';
+import { canGenerate, recordGeneration, getUserByGithubId } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
     const { url } = await request.json();
 
     if (!url) {
@@ -15,20 +24,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid GitHub URL' }, { status: 400 });
     }
 
-    const repoData = await fetchRepoData(parsed.owner, parsed.repo);
+    // Get user from database
+    const githubId = (session.user as any).githubId;
+    const user = await getUserByGithubId(githubId);
     
-    if (repoData.files.length === 0) {
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Check usage limits
+    const { allowed, usage, limit } = await canGenerate(user.id);
+    if (!allowed) {
       return NextResponse.json(
-        { error: 'Could not fetch repository files. Make sure the repo is public.' },
-        { status: 400 }
+        { 
+          error: 'Monthly limit reached', 
+          usage, 
+          limit,
+          upgrade: true 
+        }, 
+        { status: 429 }
       );
     }
 
+    // Fetch repo data and generate
+    const repoData = await fetchRepoData(parsed.owner, parsed.repo);
     const readme = await generateReadme(repoData);
 
-    return NextResponse.json({ readme, repo: repoData.name });
+    // Record usage
+    await recordGeneration(user.id, 'readme', url, 'web');
+
+    return NextResponse.json({ 
+      readme, 
+      repo: repoData.name,
+      usage: usage + 1,
+      limit,
+    });
   } catch (error) {
-    console.error('Generation error:', error);
+    console.error('README generation error:', error);
     return NextResponse.json(
       { error: 'Failed to generate README' },
       { status: 500 }

@@ -25,11 +25,11 @@ export default function Home() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [docType, setDocType] = useState<DocType>('readme');
+  const [usage, setUsage] = useState<{ used: number; limit: number } | null>(null);
 
   const handleGenerate = async () => {
     if (!url.trim()) return;
 
-    // Require auth
     if (!session) {
       signIn('github');
       return;
@@ -50,11 +50,17 @@ export default function Home() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Something went wrong');
+        if (data.upgrade) {
+          setError(`Monthly limit reached (${data.usage}/${data.limit}). Upgrade to Pro for unlimited.`);
+          setUsage({ used: data.usage, limit: data.limit });
+        } else {
+          setError(data.error || 'Something went wrong');
+        }
         return;
       }
 
       setOutput(data[config.key]);
+      setUsage({ used: data.usage, limit: data.limit });
       track(`${docType}_generated`, { repo: url });
     } catch (err) {
       setError('Failed to connect to server');
@@ -69,17 +75,27 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const isPro = (session?.user as any)?.isPro;
+
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
       <header className="border-b border-zinc-800 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-semibold">SourceDocs.ai</h1>
           
-          {/* Auth UI */}
           {status === 'loading' ? (
             <span className="text-sm text-zinc-500">Loading...</span>
           ) : session ? (
             <div className="flex items-center gap-4">
+              {/* Usage indicator */}
+              {usage && !isPro && (
+                <span className="text-sm text-zinc-500">
+                  {usage.used}/{usage.limit} used
+                </span>
+              )}
+              {isPro && (
+                <span className="text-sm text-green-500 font-medium">Pro</span>
+              )}
               <img
                 src={session.user?.image || ''}
                 alt={session.user?.name || 'User'}
@@ -151,9 +167,17 @@ export default function Home() {
           </button>
         </div>
 
-        {error && <p className="mt-4 text-red-400 text-sm">{error}</p>}
+        {error && (
+          <div className="mt-4">
+            <p className="text-red-400 text-sm">{error}</p>
+            {error.includes('limit') && (
+              <button className="mt-2 px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium transition-colors">
+                Upgrade to Pro — $8/month
+              </button>
+            )}
+          </div>
+        )}
         
-        {/* Sign in prompt for non-authenticated users */}
         {!session && status !== 'loading' && (
           <p className="mt-4 text-zinc-500 text-sm">
             Sign in with GitHub to generate documentation
