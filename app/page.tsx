@@ -87,24 +87,29 @@ export default function Home() {
         )}
       </section>
 
-      {readme && (
-        <section className="max-w-4xl mx-auto px-6 pb-20">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium">Generated README</h3>
-            <button
-              onClick={handleCopy}
-              className="px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
-            >
-              {copied ? 'Copied!' : 'Copy to clipboard'}
-            </button>
-          </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 prose prose-invert prose-sm max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-              {readme}
-            </ReactMarkdown>
-          </div>
-        </section>
-      )}
+	{readme && (
+	  <section className="max-w-4xl mx-auto px-6 pb-20">
+	    <div className="flex items-center justify-between mb-4">
+	      <h3 className="text-lg font-medium">Generated README</h3>
+	      <button
+		onClick={handleCopy}
+		className="px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+	      >
+		{copied ? 'Copied!' : 'Copy to clipboard'}
+	      </button>
+	    </div>
+	    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 shadow-xl">
+	      <div className="readme-preview">
+		<ReactMarkdown 
+		  remarkPlugins={[remarkGfm]} 
+		  rehypePlugins={[rehypeRaw]}
+		>
+		  {readme}
+		</ReactMarkdown>
+	      </div>
+	    </div>
+	  </section>
+	)}
 
       <footer className="border-t border-zinc-800 px-6 py-6 text-center text-sm text-zinc-500">
         Built by <a href="https://x.com/sourcedocsai" className="text-zinc-400 hover:text-white">@sourcedocsai</a>

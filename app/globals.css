@@ -1,26 +1,205 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* README Preview Styling */
+.readme-preview {
+  @apply text-zinc-200 leading-relaxed;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Headers - Bold, Clear Hierarchy */
+.readme-preview h1 {
+  @apply text-3xl font-bold text-white mt-8 mb-6 pb-3 border-b border-zinc-700;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.readme-preview h2 {
+  @apply text-2xl font-semibold text-white mt-10 mb-4 pb-2 border-b border-zinc-800;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.readme-preview h3 {
+  @apply text-xl font-semibold text-zinc-100 mt-8 mb-3;
+}
+
+.readme-preview h4 {
+  @apply text-lg font-medium text-zinc-200 mt-6 mb-2;
+}
+
+/* First header shouldn't have top margin */
+.readme-preview > h1:first-child,
+.readme-preview > div:first-child h1 {
+  @apply mt-0;
+}
+
+/* Paragraphs */
+.readme-preview p {
+  @apply my-4 text-zinc-300;
+}
+
+/* Links - Visible and Distinct */
+.readme-preview a {
+  @apply text-blue-400 hover:text-blue-300 underline underline-offset-2 decoration-blue-400/50 hover:decoration-blue-300 transition-colors;
+}
+
+/* Bold & Italic */
+.readme-preview strong {
+  @apply text-white font-semibold;
+}
+
+.readme-preview em {
+  @apply text-zinc-300 italic;
+}
+
+/* Code - Inline */
+.readme-preview code:not(pre code) {
+  @apply bg-zinc-800 text-emerald-400 px-1.5 py-0.5 rounded text-sm font-mono border border-zinc-700;
+}
+
+/* Code - Blocks */
+.readme-preview pre {
+  @apply bg-zinc-900 border border-zinc-700 rounded-lg p-4 my-6 overflow-x-auto;
+}
+
+.readme-preview pre code {
+  @apply bg-transparent text-zinc-300 text-sm font-mono leading-relaxed p-0 border-0;
+}
+
+/* Lists */
+.readme-preview ul {
+  @apply my-4 ml-6 space-y-2;
+}
+
+.readme-preview ol {
+  @apply my-4 ml-6 space-y-2 list-decimal;
+}
+
+.readme-preview li {
+  @apply text-zinc-300 pl-2;
+}
+
+.readme-preview ul li {
+  @apply relative;
+}
+
+.readme-preview ul li::before {
+  content: "→";
+  @apply absolute -left-5 text-blue-400;
+}
+
+.readme-preview ul ul li::before {
+  content: "·";
+}
+
+/* Nested lists */
+.readme-preview ul ul,
+.readme-preview ol ol,
+.readme-preview ul ol,
+.readme-preview ol ul {
+  @apply mt-2 mb-0;
+}
+
+/* Blockquotes - Callout Style */
+.readme-preview blockquote {
+  @apply border-l-4 border-blue-500 bg-blue-500/10 pl-4 py-3 my-6 rounded-r-lg;
+}
+
+.readme-preview blockquote p {
+  @apply text-zinc-300 my-0;
+}
+
+/* Tables - Clean & Readable */
+.readme-preview table {
+  @apply w-full my-6 border-collapse;
+}
+
+.readme-preview thead {
+  @apply bg-zinc-800;
+}
+
+.readme-preview th {
+  @apply text-left text-zinc-200 font-semibold px-4 py-3 border border-zinc-700;
+}
+
+.readme-preview td {
+  @apply text-zinc-300 px-4 py-3 border border-zinc-700;
+}
+
+.readme-preview tbody tr:hover {
+  @apply bg-zinc-800/50;
+}
+
+/* Horizontal Rule */
+.readme-preview hr {
+  @apply my-10 border-zinc-700;
+}
+
+/* Images */
+.readme-preview img {
+  @apply rounded-lg my-6 max-w-full;
+}
+
+/* Badges - Special handling for shield.io badges */
+.readme-preview img[src*="shields.io"],
+.readme-preview img[src*="badge"] {
+  @apply inline-block my-0 mx-1 rounded-sm;
+}
+
+/* Details/Summary - Collapsible Sections */
+.readme-preview details {
+  @apply my-4 bg-zinc-800/50 rounded-lg border border-zinc-700;
+}
+
+.readme-preview summary {
+  @apply cursor-pointer px-4 py-3 text-zinc-200 font-medium hover:bg-zinc-800 rounded-lg transition-colors;
+}
+
+.readme-preview details[open] summary {
+  @apply border-b border-zinc-700 rounded-b-none;
+}
+
+.readme-preview details > *:not(summary) {
+  @apply px-4;
+}
+
+.readme-preview details > *:last-child {
+  @apply pb-4;
+}
+
+/* Centered Content */
+.readme-preview [align="center"],
+.readme-preview div[align="center"] {
+  @apply text-center;
+}
+
+.readme-preview [align="center"] h1,
+.readme-preview div[align="center"] h1 {
+  @apply border-0;
+}
+
+/* Task Lists */
+.readme-preview input[type="checkbox"] {
+  @apply mr-2 accent-blue-500;
+}
+
+/* Keyboard Keys */
+.readme-preview kbd {
+  @apply bg-zinc-700 px-2 py-1 rounded text-sm font-mono border border-zinc-600 shadow-sm;
+}
+
+/* Definition Lists */
+.readme-preview dt {
+  @apply font-semibold text-zinc-200 mt-4;
+}
+
+.readme-preview dd {
+  @apply ml-6 text-zinc-400;
+}
+
+/* Footnotes */
+.readme-preview .footnotes {
+  @apply mt-10 pt-6 border-t border-zinc-700 text-sm text-zinc-400;
+}
+
+/* Selection */
+.readme-preview ::selection {
+  @apply bg-blue-500/30;
 }
