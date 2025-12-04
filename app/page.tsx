@@ -144,13 +144,7 @@ export default function Home() {
       )}
 
       <footer className="border-t border-zinc-800 px-6 py-6 text-center text-sm text-zinc-500">
-        Built by{' '}
-        
-          href="https://x.com/sourcedocsai"
-          className="text-zinc-400 hover:text-white"
-        >
-          @sourcedocsai
-        </a>
+        Built by <a href="https://x.com/sourcedocsai" className="text-zinc-400 hover:text-white">@sourcedocsai</a>
       </footer>
     </main>
   );
