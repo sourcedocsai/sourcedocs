@@ -6,7 +6,13 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { track } from '@vercel/analytics';
 
-type DocType = 'readme' | 'changelog';
+type DocType = 'readme' | 'changelog' | 'contributing';
+
+const docConfig = {
+  readme: { endpoint: '/api/generate', label: 'README', key: 'readme' },
+  changelog: { endpoint: '/api/changelog', label: 'CHANGELOG', key: 'changelog' },
+  contributing: { endpoint: '/api/contributing', label: 'CONTRIBUTING', key: 'contributing' },
+};
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -24,8 +30,8 @@ export default function Home() {
     setOutput('');
 
     try {
-      const endpoint = docType === 'readme' ? '/api/generate' : '/api/changelog';
-      const res = await fetch(endpoint, {
+      const config = docConfig[docType];
+      const res = await fetch(config.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
@@ -38,7 +44,7 @@ export default function Home() {
         return;
       }
 
-      setOutput(data.readme || data.changelog);
+      setOutput(data[config.key]);
       track(`${docType}_generated`, { repo: url });
     } catch (err) {
       setError('Failed to connect to server');
@@ -72,26 +78,19 @@ export default function Home() {
 
         {/* Document Type Selector */}
         <div className="flex justify-center gap-2 mb-6">
-          <button
-            onClick={() => setDocType('readme')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              docType === 'readme'
-                ? 'bg-white text-zinc-900'
-                : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-            }`}
-          >
-            README
-          </button>
-          <button
-            onClick={() => setDocType('changelog')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              docType === 'changelog'
-                ? 'bg-white text-zinc-900'
-                : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-            }`}
-          >
-            CHANGELOG
-          </button>
+          {(['readme', 'changelog', 'contributing'] as DocType[]).map((type) => (
+            <button
+              key={type}
+              onClick={() => setDocType(type)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                docType === type
+                  ? 'bg-white text-zinc-900'
+                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+              }`}
+            >
+              {docConfig[type].label}
+            </button>
+          ))}
         </div>
 
         {/* Input */}
@@ -121,7 +120,7 @@ export default function Home() {
         <section className="max-w-4xl mx-auto px-6 pb-20">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium">
-              Generated {docType === 'readme' ? 'README' : 'CHANGELOG'}
+              Generated {docConfig[docType].label}
             </h3>
             <button
               onClick={handleCopy}
@@ -132,10 +131,7 @@ export default function Home() {
           </div>
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 shadow-xl">
             <div className="readme-preview">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw]}
-              >
+              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                 {output}
               </ReactMarkdown>
             </div>
