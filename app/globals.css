@@ -1,91 +1,144 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* README Preview Styling */
+/* README Preview Styling - Using standard CSS for Tailwind v4 compatibility */
 .readme-preview {
-  @apply text-zinc-200 leading-relaxed;
+  color: #e4e4e7;
+  line-height: 1.7;
 }
 
 /* Headers - Bold, Clear Hierarchy */
 .readme-preview h1 {
-  @apply text-3xl font-bold text-white mt-8 mb-6 pb-3 border-b border-zinc-700;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 2rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #3f3f46;
 }
 
 .readme-preview h2 {
-  @apply text-2xl font-semibold text-white mt-10 mb-4 pb-2 border-b border-zinc-800;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #27272a;
 }
 
 .readme-preview h3 {
-  @apply text-xl font-semibold text-zinc-100 mt-8 mb-3;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f4f4f5;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
 }
 
 .readme-preview h4 {
-  @apply text-lg font-medium text-zinc-200 mt-6 mb-2;
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #e4e4e7;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
 /* First header shouldn't have top margin */
 .readme-preview > h1:first-child,
 .readme-preview > div:first-child h1 {
-  @apply mt-0;
+  margin-top: 0;
 }
 
 /* Paragraphs */
 .readme-preview p {
-  @apply my-4 text-zinc-300;
+  margin: 1rem 0;
+  color: #d4d4d8;
 }
 
 /* Links - Visible and Distinct */
 .readme-preview a {
-  @apply text-blue-400 hover:text-blue-300 underline underline-offset-2 decoration-blue-400/50 hover:decoration-blue-300 transition-colors;
+  color: #60a5fa;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(96, 165, 250, 0.5);
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+
+.readme-preview a:hover {
+  color: #93c5fd;
+  text-decoration-color: #93c5fd;
 }
 
 /* Bold & Italic */
 .readme-preview strong {
-  @apply text-white font-semibold;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .readme-preview em {
-  @apply text-zinc-300 italic;
+  color: #d4d4d8;
+  font-style: italic;
 }
 
 /* Code - Inline */
 .readme-preview code:not(pre code) {
-  @apply bg-zinc-800 text-emerald-400 px-1.5 py-0.5 rounded text-sm font-mono border border-zinc-700;
+  background-color: #27272a;
+  color: #34d399;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-family: ui-monospace, monospace;
+  border: 1px solid #3f3f46;
 }
 
 /* Code - Blocks */
 .readme-preview pre {
-  @apply bg-zinc-900 border border-zinc-700 rounded-lg p-4 my-6 overflow-x-auto;
+  background-color: #18181b;
+  border: 1px solid #3f3f46;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
 }
 
 .readme-preview pre code {
-  @apply bg-transparent text-zinc-300 text-sm font-mono leading-relaxed p-0 border-0;
+  background-color: transparent;
+  color: #d4d4d8;
+  font-size: 0.875rem;
+  font-family: ui-monospace, monospace;
+  line-height: 1.6;
+  padding: 0;
+  border: 0;
 }
 
 /* Lists */
 .readme-preview ul {
-  @apply my-4 ml-6 space-y-2;
+  margin: 1rem 0;
+  margin-left: 1.5rem;
+  list-style: none;
 }
 
 .readme-preview ol {
-  @apply my-4 ml-6 space-y-2 list-decimal;
+  margin: 1rem 0;
+  margin-left: 1.5rem;
+  list-style: decimal;
 }
 
 .readme-preview li {
-  @apply text-zinc-300 pl-2;
+  color: #d4d4d8;
+  padding-left: 0.5rem;
+  margin-bottom: 0.5rem;
+  position: relative;
 }
 
-.readme-preview ul li {
-  @apply relative;
-}
-
-.readme-preview ul li::before {
+.readme-preview ul > li::before {
   content: "→";
-  @apply absolute -left-5 text-blue-400;
+  position: absolute;
+  left: -1.25rem;
+  color: #60a5fa;
 }
 
-.readme-preview ul ul li::before {
+.readme-preview ul ul > li::before {
   content: "·";
 }
 
@@ -94,112 +147,141 @@
 .readme-preview ol ol,
 .readme-preview ul ol,
 .readme-preview ol ul {
-  @apply mt-2 mb-0;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
 }
 
 /* Blockquotes - Callout Style */
 .readme-preview blockquote {
-  @apply border-l-4 border-blue-500 bg-blue-500/10 pl-4 py-3 my-6 rounded-r-lg;
+  border-left: 4px solid #3b82f6;
+  background-color: rgba(59, 130, 246, 0.1);
+  padding-left: 1rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  margin: 1.5rem 0;
+  border-radius: 0 0.5rem 0.5rem 0;
 }
 
 .readme-preview blockquote p {
-  @apply text-zinc-300 my-0;
+  color: #d4d4d8;
+  margin: 0;
 }
 
 /* Tables - Clean & Readable */
 .readme-preview table {
-  @apply w-full my-6 border-collapse;
+  width: 100%;
+  margin: 1.5rem 0;
+  border-collapse: collapse;
 }
 
 .readme-preview thead {
-  @apply bg-zinc-800;
+  background-color: #27272a;
 }
 
 .readme-preview th {
-  @apply text-left text-zinc-200 font-semibold px-4 py-3 border border-zinc-700;
+  text-align: left;
+  color: #e4e4e7;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border: 1px solid #3f3f46;
 }
 
 .readme-preview td {
-  @apply text-zinc-300 px-4 py-3 border border-zinc-700;
+  color: #d4d4d8;
+  padding: 0.75rem 1rem;
+  border: 1px solid #3f3f46;
 }
 
 .readme-preview tbody tr:hover {
-  @apply bg-zinc-800/50;
+  background-color: rgba(39, 39, 42, 0.5);
 }
 
 /* Horizontal Rule */
 .readme-preview hr {
-  @apply my-10 border-zinc-700;
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid #3f3f46;
 }
 
 /* Images */
 .readme-preview img {
-  @apply rounded-lg my-6 max-w-full;
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
+  max-width: 100%;
 }
 
 /* Badges - Special handling for shield.io badges */
 .readme-preview img[src*="shields.io"],
 .readme-preview img[src*="badge"] {
-  @apply inline-block my-0 mx-1 rounded-sm;
+  display: inline-block;
+  margin: 0 0.25rem;
+  border-radius: 0.125rem;
 }
 
 /* Details/Summary - Collapsible Sections */
 .readme-preview details {
-  @apply my-4 bg-zinc-800/50 rounded-lg border border-zinc-700;
+  margin: 1rem 0;
+  background-color: rgba(39, 39, 42, 0.5);
+  border-radius: 0.5rem;
+  border: 1px solid #3f3f46;
 }
 
 .readme-preview summary {
-  @apply cursor-pointer px-4 py-3 text-zinc-200 font-medium hover:bg-zinc-800 rounded-lg transition-colors;
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  color: #e4e4e7;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: background-color 0.15s;
+}
+
+.readme-preview summary:hover {
+  background-color: #27272a;
 }
 
 .readme-preview details[open] summary {
-  @apply border-b border-zinc-700 rounded-b-none;
+  border-bottom: 1px solid #3f3f46;
+  border-radius: 0.5rem 0.5rem 0 0;
 }
 
 .readme-preview details > *:not(summary) {
-  @apply px-4;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
 .readme-preview details > *:last-child {
-  @apply pb-4;
+  padding-bottom: 1rem;
 }
 
 /* Centered Content */
 .readme-preview [align="center"],
 .readme-preview div[align="center"] {
-  @apply text-center;
+  text-align: center;
 }
 
 .readme-preview [align="center"] h1,
 .readme-preview div[align="center"] h1 {
-  @apply border-0;
+  border-bottom: 0;
 }
 
 /* Task Lists */
 .readme-preview input[type="checkbox"] {
-  @apply mr-2 accent-blue-500;
+  margin-right: 0.5rem;
+  accent-color: #3b82f6;
 }
 
 /* Keyboard Keys */
 .readme-preview kbd {
-  @apply bg-zinc-700 px-2 py-1 rounded text-sm font-mono border border-zinc-600 shadow-sm;
-}
-
-/* Definition Lists */
-.readme-preview dt {
-  @apply font-semibold text-zinc-200 mt-4;
-}
-
-.readme-preview dd {
-  @apply ml-6 text-zinc-400;
-}
-
-/* Footnotes */
-.readme-preview .footnotes {
-  @apply mt-10 pt-6 border-t border-zinc-700 text-sm text-zinc-400;
+  background-color: #3f3f46;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-family: ui-monospace, monospace;
+  border: 1px solid #52525b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Selection */
 .readme-preview ::selection {
-  @apply bg-blue-500/30;
+  background-color: rgba(59, 130, 246, 0.3);
 }
