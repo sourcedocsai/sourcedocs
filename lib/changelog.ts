@@ -1,86 +1,73 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { CommitData, ReleaseData } from './github';
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-export async function generateChangelog(data: {
-  name: string;
-  commits: CommitData[];
-  releases: ReleaseData[];
-  tags: string[];
-}): Promise<string> {
-  const commitsText = data.commits
-    .map(c => `- ${c.date.slice(0, 10)} | ${c.sha} | ${c.message} (${c.author})`)
-    .join('\n');
+export interface CommitData {
+  sha: string;
+  message: string;
+  date: string;
+  author: string;
+}
 
-  const releasesText = data.releases.length > 0
-    ? data.releases.map(r => `## ${r.tag} - ${r.date.slice(0, 10)}\n${r.body}`).join('\n\n')
+export interface ReleaseData {
+  tag: string;
+  name: string;
+  body: string;
+  date: string;
+}
+
+export async function generateChangelog(
+  repoName: string,
+  commits: CommitData[],
+  releases: ReleaseData[],
+  tags: string[]
+): Promise<string> {
+  const releasesContext = releases.length > 0
+    ? `## Releases\n${releases.map(r => `- ${r.tag} (${r.date}): ${r.name}\n${r.body}`).join('\n\n')}`
     : 'No releases found.';
 
-  const prompt = `You are an expert technical writer creating a professional CHANGELOG.md for a GitHub repository.
+  const commitsContext = commits.length > 0
+    ? `## Recent Commits\n${commits.map(c => `- ${c.sha}: ${c.message} (${c.author}, ${c.date})`).join('\n')}`
+    : 'No commits found.';
 
-## Repository: ${data.name}
+  const tagsContext = tags.length > 0
+    ? `## Tags\n${tags.join(', ')}`
+    : 'No tags found.';
 
-## Existing Releases
-${releasesText}
+  const prompt = `You are generating a CHANGELOG.md for a GitHub repository.
 
-## Recent Commits
-${commitsText}
+## Repository: ${repoName}
 
-## Available Tags
-${data.tags.join(', ') || 'None'}
+${releasesContext}
+
+${commitsContext}
+
+${tagsContext}
 
 ---
 
 ## YOUR TASK
 
-Generate a professional CHANGELOG.md following the Keep a Changelog format (https://keepachangelog.com).
+Generate a professional CHANGELOG following the Keep a Changelog format (keepachangelog.com).
 
-## FORMAT RULES
+## STRUCTURE
 
-1. **Header**
-\`\`\`markdown
-# Changelog
+1. Header with format explanation
+2. Version sections (most recent first)
+3. Categories: Added, Changed, Deprecated, Removed, Fixed, Security
+4. Unreleased section if there are commits after the latest release
 
-All notable changes to this project will be documented in this file.
+## RULES
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-\`\`\`
-
-2. **Version Sections**
-- Use \`## [version] - YYYY-MM-DD\` format
-- If releases exist, use those versions
-- If no releases, infer versions from tags or group by date
-- Most recent first
-
-3. **Change Categories** (only include if relevant)
-- \`### Added\` — New features
-- \`### Changed\` — Changes in existing functionality
-- \`### Deprecated\` — Soon-to-be removed features
-- \`### Removed\` — Removed features
-- \`### Fixed\` — Bug fixes
-- \`### Security\` — Vulnerability fixes
-
-4. **Entry Format**
-- Start each entry with a verb: Add, Fix, Update, Remove, Improve
+- Start entries with a verb (Add, Fix, Update, Remove)
 - Be concise but specific
-- Group related commits into single entries
-- Skip merge commits, version bumps, and trivial changes
-
-5. **Unreleased Section**
-- If there are commits after the latest release, add \`## [Unreleased]\` at the top
-
-## STYLE
-
-- Clean, scannable formatting
-- Blank line between sections
-- No commit hashes in the output
-- No author names
+- Group related commits
+- Skip merge commits and trivial changes
+- No commit hashes or author names in output
 - Consolidate similar changes
-- Make it useful for users, not developers
+- Write for users, not developers
 
 ## OUTPUT
 
