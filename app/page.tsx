@@ -4,6 +4,7 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import { track } from '@vercel/analytics';
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -34,6 +35,7 @@ export default function Home() {
       }
 
       setReadme(data.readme);
+      track('readme_generated', { repo: url });
     } catch (err) {
       setError('Failed to connect to server');
     } finally {
