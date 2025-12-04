@@ -1,6 +1,14 @@
 import { NextAuthOptions } from 'next-auth';
 import GitHubProvider from 'next-auth/providers/github';
 
+interface GitHubProfile {
+  id: number;
+  login: string;
+  name: string;
+  email: string;
+  avatar_url: string;
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GitHubProvider({
@@ -12,8 +20,9 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, profile }) {
       // First login - save GitHub data
       if (account && profile) {
-        token.githubId = profile.id;
-        token.username = (profile as any).login;
+        const ghProfile = profile as GitHubProfile;
+        token.githubId = ghProfile.id;
+        token.username = ghProfile.login;
       }
       return token;
     },
@@ -27,6 +36,6 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: '/', // Redirect to home, we'll handle login there
+    signIn: '/',
   },
 };
