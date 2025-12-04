@@ -6,22 +6,26 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { track } from '@vercel/analytics';
 
+type DocType = 'readme' | 'changelog';
+
 export default function Home() {
   const [url, setUrl] = useState('');
-  const [readme, setReadme] = useState('');
+  const [output, setOutput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [docType, setDocType] = useState<DocType>('readme');
 
   const handleGenerate = async () => {
     if (!url.trim()) return;
-    
+
     setLoading(true);
     setError('');
-    setReadme('');
+    setOutput('');
 
     try {
-      const res = await fetch('/api/generate', {
+      const endpoint = docType === 'readme' ? '/api/generate' : '/api/changelog';
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
@@ -34,8 +38,8 @@ export default function Home() {
         return;
       }
 
-      setReadme(data.readme);
-      track('readme_generated', { repo: url });
+      setOutput(data.readme || data.changelog);
+      track(`${docType}_generated`, { repo: url });
     } catch (err) {
       setError('Failed to connect to server');
     } finally {
@@ -44,7 +48,7 @@ export default function Home() {
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(readme);
+    await navigator.clipboard.writeText(output);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -60,12 +64,37 @@ export default function Home() {
 
       <section className="max-w-3xl mx-auto px-6 py-20 text-center">
         <h2 className="text-4xl font-bold mb-4">
-          README in seconds, not hours
+          Documentation in seconds, not hours
         </h2>
         <p className="text-zinc-400 text-lg mb-10">
-          Paste a GitHub repo. Get a professional README. That is it.
+          Paste a GitHub repo. Get professional docs. That is it.
         </p>
 
+        {/* Document Type Selector */}
+        <div className="flex justify-center gap-2 mb-6">
+          <button
+            onClick={() => setDocType('readme')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              docType === 'readme'
+                ? 'bg-white text-zinc-900'
+                : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+            }`}
+          >
+            README
+          </button>
+          <button
+            onClick={() => setDocType('changelog')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              docType === 'changelog'
+                ? 'bg-white text-zinc-900'
+                : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+            }`}
+          >
+            CHANGELOG
+          </button>
+        </div>
+
+        {/* Input */}
         <div className="flex gap-3 max-w-xl mx-auto">
           <input
             type="text"
@@ -84,37 +113,44 @@ export default function Home() {
           </button>
         </div>
 
-        {error && (
-          <p className="mt-4 text-red-400 text-sm">{error}</p>
-        )}
+        {error && <p className="mt-4 text-red-400 text-sm">{error}</p>}
       </section>
 
-	{readme && (
-	  <section className="max-w-4xl mx-auto px-6 pb-20">
-	    <div className="flex items-center justify-between mb-4">
-	      <h3 className="text-lg font-medium">Generated README</h3>
-	      <button
-		onClick={handleCopy}
-		className="px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
-	      >
-		{copied ? 'Copied!' : 'Copy to clipboard'}
-	      </button>
-	    </div>
-	    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 shadow-xl">
-	      <div className="readme-preview">
-		<ReactMarkdown 
-		  remarkPlugins={[remarkGfm]} 
-		  rehypePlugins={[rehypeRaw]}
-		>
-		  {readme}
-		</ReactMarkdown>
-	      </div>
-	    </div>
-	  </section>
-	)}
+      {/* Output */}
+      {output && (
+        <section className="max-w-4xl mx-auto px-6 pb-20">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium">
+              Generated {docType === 'readme' ? 'README' : 'CHANGELOG'}
+            </h3>
+            <button
+              onClick={handleCopy}
+              className="px-4 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors"
+            >
+              {copied ? 'Copied!' : 'Copy to clipboard'}
+            </button>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-8 shadow-xl">
+            <div className="readme-preview">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
+              >
+                {output}
+              </ReactMarkdown>
+            </div>
+          </div>
+        </section>
+      )}
 
       <footer className="border-t border-zinc-800 px-6 py-6 text-center text-sm text-zinc-500">
-        Built by <a href="https://x.com/sourcedocsai" className="text-zinc-400 hover:text-white">@sourcedocsai</a>
+        Built by{' '}
+        
+          href="https://x.com/sourcedocsai"
+          className="text-zinc-400 hover:text-white"
+        >
+          @sourcedocsai
+        </a>
       </footer>
     </main>
   );

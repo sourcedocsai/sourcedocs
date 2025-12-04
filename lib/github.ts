@@ -123,3 +123,74 @@ export async function fetchRepoData(owner: string, repo: string): Promise<RepoDa
     tree: tree.slice(0, 50),
   };
 }
+
+export interface CommitData {
+  sha: string;
+  message: string;
+  date: string;
+  author: string;
+}
+
+export interface ReleaseData {
+  tag: string;
+  name: string;
+  body: string;
+  date: string;
+}
+
+export async function fetchCommits(owner: string, repo: string, limit = 50): Promise<CommitData[]> {
+  try {
+    const res = await fetch(
+      `${GITHUB_API}/repos/${owner}/${repo}/commits?per_page=${limit}`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    
+    return data.map((commit: any) => ({
+      sha: commit.sha.slice(0, 7),
+      message: commit.commit.message.split('\n')[0], // First line only
+      date: commit.commit.author.date,
+      author: commit.commit.author.name,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchReleases(owner: string, repo: string): Promise<ReleaseData[]> {
+  try {
+    const res = await fetch(
+      `${GITHUB_API}/repos/${owner}/${repo}/releases?per_page=20`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    
+    return data.map((release: any) => ({
+      tag: release.tag_name,
+      name: release.name || release.tag_name,
+      body: release.body || '',
+      date: release.published_at,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchTags(owner: string, repo: string): Promise<string[]> {
+  try {
+    const res = await fetch(
+      `${GITHUB_API}/repos/${owner}/${repo}/tags?per_page=20`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.map((tag: any) => tag.name);
+  } catch {
+    return [];
+  }
+}
+B
+B
+B
+B
+B
+
