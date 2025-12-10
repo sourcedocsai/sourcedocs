@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       isPro: user.is_pro,
+      surveyCompleted: user.survey_completed,
       usage,
       limit: user.is_pro ? -1 : 1,
     });

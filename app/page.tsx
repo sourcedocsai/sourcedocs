@@ -68,7 +68,8 @@ function HomeContent() {
         const data = await res.json();
         setIsPro(data.isPro);
         setUsage({ used: data.usage, limit: data.limit });
-        
+        setSurveyCompleted(data.surveyCompleted || false);
+      
         if (data.isPro) {
           setError('');
         }
