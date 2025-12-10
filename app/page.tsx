@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -18,8 +19,12 @@ const docConfig = {
   codeofconduct: { endpoint: '/api/codeofconduct', label: 'CODE OF CONDUCT', key: 'codeofconduct' },
 };
 
-export default function Home() {
+function HomeContent() {
   const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
+  const upgraded = searchParams.get('upgraded');
+  const canceled = searchParams.get('canceled');
+
   const [url, setUrl] = useState('');
   const [output, setOutput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -56,8 +61,7 @@ export default function Home() {
         if (data.upgrade) {
           setError(`Monthly limit reached (${data.usage}/${data.limit}). Upgrade to Pro for unlimited.`);
           setUsage({ used: data.usage, limit: data.limit });
-          
-          // Show survey if not completed
+
           if (!surveyCompleted) {
             setShowSurvey(true);
           }
@@ -83,6 +87,21 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleUpgrade = async () => {
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+      });
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+    }
+  };
+
   const isPro = (session?.user as any)?.isPro;
 
   return (
@@ -90,7 +109,7 @@ export default function Home() {
       <header className="border-b border-zinc-800 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-semibold">SourceDocs.ai</h1>
-          
+
           {status === 'loading' ? (
             <span className="text-sm text-zinc-500">Loading...</span>
           ) : session ? (
@@ -174,27 +193,41 @@ export default function Home() {
           </button>
         </div>
 
-	{error && (
-	  <div className="mt-4">
-	    <p className="text-red-400 text-sm">{error}</p>
-	    {error.includes('limit') && (
-	      <div className="flex flex-col items-center gap-2 mt-2">
-		<button className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium transition-colors">
-		  Upgrade to Pro — $8/month
-		</button>
-		{!surveyCompleted && (
-		  <button
-		    onClick={() => setShowSurvey(true)}
-		    className="text-sm text-zinc-400 hover:text-white underline transition-colors"
-		  >
-		    Help us improve → Take 30 second survey
-		  </button>
-		)}
-	      </div>
-	    )}
-	  </div>
-	)}
+        {error && (
+          <div className="mt-4">
+            <p className="text-red-400 text-sm">{error}</p>
+            {error.includes('limit') && (
+              <div className="flex flex-col items-center gap-2 mt-2">
+                <button
+                  onClick={handleUpgrade}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Upgrade to Pro — $8/month
+                </button>
+                {!surveyCompleted && (
+                  <button
+                    onClick={() => setShowSurvey(true)}
+                    className="text-sm text-zinc-400 hover:text-white underline transition-colors"
+                  >
+                    Help us improve → Take 30 second survey
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
+        {upgraded && (
+          <p className="mt-4 text-green-400 text-sm">
+            🎉 Welcome to Pro! You now have unlimited generations.
+          </p>
+        )}
+
+        {canceled && (
+          <p className="mt-4 text-zinc-400 text-sm">
+            Checkout canceled. No worries — you can upgrade anytime.
+          </p>
+        )}
 
         {!session && status !== 'loading' && (
           <p className="mt-4 text-zinc-500 text-sm">
@@ -242,5 +275,13 @@ export default function Home() {
         />
       )}
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
+      <HomeContent />
+    </Suspense>
   );
 }
