@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
@@ -34,6 +34,32 @@ function HomeContent() {
   const [usage, setUsage] = useState<{ used: number; limit: number } | null>(null);
   const [showSurvey, setShowSurvey] = useState(false);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
+  const [isPro, setIsPro] = useState(false);
+
+  // Fetch user status on load and after upgrade
+  useEffect(() => {
+    if (session) {
+      fetchUserStatus();
+    }
+  }, [session, upgraded]);
+
+  const fetchUserStatus = async () => {
+    try {
+      const res = await fetch('/api/user/status');
+      if (res.ok) {
+        const data = await res.json();
+        setIsPro(data.isPro);
+        setUsage({ used: data.usage, limit: data.limit });
+        
+        // Clear error if user is now Pro
+        if (data.isPro) {
+          setError('');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch user status:', err);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!url.trim()) return;
@@ -102,8 +128,6 @@ function HomeContent() {
     }
   };
 
-  const isPro = (session?.user as any)?.isPro;
-
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
       <header className="border-b border-zinc-800 px-6 py-4">
@@ -114,13 +138,12 @@ function HomeContent() {
             <span className="text-sm text-zinc-500">Loading...</span>
           ) : session ? (
             <div className="flex items-center gap-4">
-              {usage && !isPro && (
+              {isPro ? (
+                <span className="text-sm text-green-500 font-medium">Pro</span>
+              ) : usage && (
                 <span className="text-sm text-zinc-500">
                   {usage.used}/{usage.limit} used
                 </span>
-              )}
-              {isPro && (
-                <span className="text-sm text-green-500 font-medium">Pro</span>
               )}
               <img
                 src={session.user?.image || ''}
@@ -193,7 +216,8 @@ function HomeContent() {
           </button>
         </div>
 
-        {error && (
+        {/* Error with upgrade prompt - only show if NOT pro */}
+        {error && !isPro && (
           <div className="mt-4">
             <p className="text-red-400 text-sm">{error}</p>
             {error.includes('limit') && (
@@ -217,7 +241,12 @@ function HomeContent() {
           </div>
         )}
 
-        {upgraded && (
+        {/* Error for non-limit errors */}
+        {error && isPro && !error.includes('limit') && (
+          <p className="mt-4 text-red-400 text-sm">{error}</p>
+        )}
+
+        {upgraded && isPro && (
           <p className="mt-4 text-green-400 text-sm">
             🎉 Welcome to Pro! You now have unlimited generations.
           </p>
