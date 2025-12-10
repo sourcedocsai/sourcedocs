@@ -6,7 +6,6 @@ export const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Types
 export interface User {
   id: string;
   github_id: string;
@@ -15,6 +14,9 @@ export interface User {
   avatar_url: string | null;
   username: string | null;
   is_pro: boolean;
+  survey_completed: boolean;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
   created_at: string;
 }
 
