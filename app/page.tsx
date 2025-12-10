@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -22,8 +22,8 @@ const docConfig = {
 function HomeContent() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
-  const upgraded = searchParams.get('upgraded');
-  const canceled = searchParams.get('canceled');
+  const router = useRouter();
+  const checkoutReturn = searchParams.get('checkout');
 
   const [url, setUrl] = useState('');
   const [output, setOutput] = useState('');
@@ -35,13 +35,31 @@ function HomeContent() {
   const [showSurvey, setShowSurvey] = useState(false);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [isPro, setIsPro] = useState(false);
+  const [justUpgraded, setJustUpgraded] = useState(false);
 
-  // Fetch user status on load and after upgrade
+  // Fetch user status on load
   useEffect(() => {
     if (session) {
       fetchUserStatus();
     }
-  }, [session, upgraded]);
+  }, [session]);
+
+  // Handle checkout return - verify with database, not URL param
+  useEffect(() => {
+    if (checkoutReturn && session) {
+      // Clean up URL
+      router.replace('/', { scroll: false });
+      
+      // Re-fetch status to verify upgrade
+      fetchUserStatus().then((data) => {
+        if (data?.isPro) {
+          setJustUpgraded(true);
+          // Auto-hide after 5 seconds
+          setTimeout(() => setJustUpgraded(false), 5000);
+        }
+      });
+    }
+  }, [checkoutReturn, session]);
 
   const fetchUserStatus = async () => {
     try {
@@ -51,14 +69,15 @@ function HomeContent() {
         setIsPro(data.isPro);
         setUsage({ used: data.usage, limit: data.limit });
         
-        // Clear error if user is now Pro
         if (data.isPro) {
           setError('');
         }
+        return data;
       }
     } catch (err) {
       console.error('Failed to fetch user status:', err);
     }
+    return null;
   };
 
   const handleGenerate = async () => {
@@ -241,20 +260,15 @@ function HomeContent() {
           </div>
         )}
 
-        {/* Error for non-limit errors */}
+        {/* Error for non-limit errors when Pro */}
         {error && isPro && !error.includes('limit') && (
           <p className="mt-4 text-red-400 text-sm">{error}</p>
         )}
 
-        {upgraded && isPro && (
+        {/* Just upgraded message - only shows if DB confirms Pro status */}
+        {justUpgraded && isPro && (
           <p className="mt-4 text-green-400 text-sm">
             🎉 Welcome to Pro! You now have unlimited generations.
-          </p>
-        )}
-
-        {canceled && (
-          <p className="mt-4 text-zinc-400 text-sm">
-            Checkout canceled. No worries — you can upgrade anytime.
           </p>
         )}
 
