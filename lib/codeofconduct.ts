@@ -8,62 +8,24 @@ export async function generateCodeOfConduct(repoData: {
   name: string;
   owner: string;
 }): Promise<string> {
-  const prompt = `You are generating a CODE_OF_CONDUCT.md file for an open source project.
+  const prompt = `Generate a standard CODE_OF_CONDUCT.md file for an open source project called "${repoData.name}" by ${repoData.owner}.
 
-## Repository: ${repoData.name}
-## Owner: ${repoData.owner}
+Use the widely-adopted Contributor Covenant format (version 2.1), which is the industry standard for open source projects.
 
-## YOUR TASK
+Include these sections:
+1. A welcoming header
+2. "Our Pledge" - commitment to an inclusive community
+3. "Our Standards" - examples of positive community behaviors
+4. "Enforcement Responsibilities" - maintainer duties
+5. "Scope" - where the code applies
+6. "Enforcement" - how to report concerns (use placeholder: [INSERT CONTACT EMAIL])
+7. "Attribution" - link to https://www.contributor-covenant.org version 2.1
 
-Generate a professional Code of Conduct based on the Contributor Covenant (the industry standard).
+Keep the tone professional, welcoming, and constructive. Focus on positive community building.
 
-## STRUCTURE
+Format in clean markdown with proper headings and spacing.
 
-1. **Header**
-   - Title: "Contributor Covenant Code of Conduct"
-   - Or: "Code of Conduct"
-
-2. **Our Pledge**
-   - Inclusive, welcoming community
-   - Harassment-free experience for everyone
-
-3. **Our Standards**
-   - Examples of positive behavior
-   - Examples of unacceptable behavior
-
-4. **Enforcement Responsibilities**
-   - Who enforces (community leaders/maintainers)
-   - What they can do
-
-5. **Scope**
-   - Where it applies (project spaces, public representation)
-
-6. **Enforcement**
-   - How to report violations
-   - Use placeholder email: [INSERT YOUR EMAIL] (user will replace with their actual contact)
-   - What happens when reported
-
-7. **Enforcement Guidelines**
-   - Correction
-   - Warning
-   - Temporary Ban
-   - Permanent Ban
-
-8. **Attribution**
-   - Link to Contributor Covenant: https://www.contributor-covenant.org
-   - Version 2.1
-
-## STYLE
-
-- Professional but welcoming
-- Clear and specific
-- Not overly legalistic
-- Use proper markdown formatting
-- Good spacing between sections
-
-## OUTPUT
-
-Return ONLY the markdown. No preamble.`;
+Return ONLY the markdown content. No preamble or explanation.`;
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
