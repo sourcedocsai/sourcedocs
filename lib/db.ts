@@ -1,33 +1,45 @@
-import { supabaseAdmin, User, Generation } from './supabase';
+import { supabaseAdmin, User, Generation, Plan } from './supabase';
+
+// Plan limits
+const PLAN_LIMITS = {
+  free: { web: 1, api: 0 },
+  web_pro: { web: -1, api: 0 },  // -1 = unlimited
+  api_pro: { web: 1, api: 100 },
+  bundle: { web: -1, api: 100 },
+};
 
 // Get or create user from GitHub profile
 export async function getOrCreateUser(profile: {
-  githubId: string;
-  email?: string | null;
-  name?: string | null;
-  avatar_url?: string | null;
-  username?: string | null;
+  id: string;
+  login: string;
+  name?: string;
+  email?: string;
+  avatar_url?: string;
 }): Promise<User> {
-  // Check if user exists
-  const { data: existingUser } = await supabaseAdmin
+  // Try to find existing user
+  const { data: existing } = await supabaseAdmin
     .from('users')
     .select('*')
-    .eq('github_id', profile.githubId)
+    .eq('github_id', profile.id)
     .single();
 
-  if (existingUser) {
-    return existingUser as User;
+  if (existing) {
+    return existing as User;
   }
 
   // Create new user
   const { data: newUser, error } = await supabaseAdmin
     .from('users')
     .insert({
-      github_id: profile.githubId,
-      email: profile.email,
-      name: profile.name,
-      avatar_url: profile.avatar_url,
-      username: profile.username,
+      github_id: profile.id,
+      username: profile.login,
+      name: profile.name || null,
+      email: profile.email || null,
+      avatar_url: profile.avatar_url || null,
+      plan: 'free',
+      api_calls_limit: 0,
+      api_calls_used: 0,
+      api_calls_reset_at: new Date().toISOString(),
     })
     .select()
     .single();
@@ -47,6 +59,55 @@ export async function getUserByGithubId(githubId: string): Promise<User | null> 
   return data as User | null;
 }
 
+// Get user by API key
+export async function getUserByApiKey(apiKey: string): Promise<User | null> {
+  const { data: keyData } = await supabaseAdmin
+    .from('api_keys')
+    .select('user_id')
+    .eq('key', apiKey)
+    .single();
+
+  if (!keyData) return null;
+
+  // Update last_used_at
+  await supabaseAdmin
+    .from('api_keys')
+    .update({ last_used_at: new Date().toISOString() })
+    .eq('key', apiKey);
+
+  const { data: user } = await supabaseAdmin
+    .from('users')
+    .select('*')
+    .eq('id', keyData.user_id)
+    .single();
+
+  return user as User | null;
+}
+
+// Check and reset API calls if needed
+async function checkAndResetApiCalls(user: User): Promise<User> {
+  const resetAt = new Date(user.api_calls_reset_at);
+  const now = new Date();
+
+  // Reset if it's been more than 30 days
+  if (now.getTime() - resetAt.getTime() > 30 * 24 * 60 * 60 * 1000) {
+    const { data } = await supabaseAdmin
+      .from('users')
+      .update({
+        api_calls_used: 0,
+        api_calls_reset_at: now.toISOString(),
+      })
+      .eq('id', user.id)
+      .select()
+      .single();
+
+    return data as User;
+  }
+
+  return user;
+}
+
+// Record a generation
 export async function recordGeneration(
   userId: string,
   docType: string,
@@ -70,38 +131,96 @@ export async function recordGeneration(
   return data as Generation;
 }
 
-// Get usage count for current month
-export async function getMonthlyUsage(userId: string): Promise<number> {
+// Get monthly web usage
+export async function getMonthlyWebUsage(userId: string): Promise<number> {
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
-  const { count, error } = await supabaseAdmin
+  const { count } = await supabaseAdmin
     .from('generations')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
+    .eq('source', 'web')
     .gte('created_at', startOfMonth.toISOString());
 
-  if (error) throw error;
   return count || 0;
 }
 
-// Check if user can generate (within limits)
-export async function canGenerate(userId: string): Promise<{ allowed: boolean; usage: number; limit: number }> {
+// Check if user can generate via web
+export async function canGenerateWeb(userId: string): Promise<{
+  allowed: boolean;
+  usage: number;
+  limit: number;
+  plan: Plan;
+}> {
   const { data: user } = await supabaseAdmin
     .from('users')
-    .select('is_pro')
+    .select('*')
     .eq('id', userId)
     .single();
 
-  const limit = user?.is_pro ? Infinity : 1; // 1 free per month, unlimited for pro
-  const usage = await getMonthlyUsage(userId);
+  if (!user) {
+    return { allowed: false, usage: 0, limit: 0, plan: 'free' };
+  }
+
+  const plan = (user.plan || 'free') as Plan;
+  const limits = PLAN_LIMITS[plan];
+  const usage = await getMonthlyWebUsage(userId);
+
+  // Unlimited web access
+  if (limits.web === -1) {
+    return { allowed: true, usage, limit: -1, plan };
+  }
 
   return {
-    allowed: usage < limit,
+    allowed: usage < limits.web,
     usage,
-    limit: user?.is_pro ? -1 : limit, // -1 indicates unlimited
+    limit: limits.web,
+    plan,
   };
+}
+
+// Check if user can generate via API
+export async function canGenerateApi(userId: string): Promise<{
+  allowed: boolean;
+  usage: number;
+  limit: number;
+  plan: Plan;
+}> {
+  let user = await supabaseAdmin
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single()
+    .then(res => res.data as User);
+
+  if (!user) {
+    return { allowed: false, usage: 0, limit: 0, plan: 'free' };
+  }
+
+  // Check and reset if needed
+  user = await checkAndResetApiCalls(user);
+
+  const plan = (user.plan || 'free') as Plan;
+  const limits = PLAN_LIMITS[plan];
+
+  // No API access
+  if (limits.api === 0) {
+    return { allowed: false, usage: user.api_calls_used, limit: 0, plan };
+  }
+
+  return {
+    allowed: user.api_calls_used < limits.api,
+    usage: user.api_calls_used,
+    limit: limits.api,
+    plan,
+  };
+}
+
+// Increment API usage
+export async function incrementApiUsage(userId: string): Promise<void> {
+  await supabaseAdmin.rpc('increment_api_calls', { user_id: userId });
 }
 
 // Survey response type
@@ -135,20 +254,66 @@ export async function saveSurveyResponse(
 
   if (error) throw error;
 
-  // Mark user as having completed survey
   await supabaseAdmin
     .from('users')
     .update({ survey_completed: true })
     .eq('id', userId);
 }
 
-// Check if user has completed survey
-export async function hasCompletedSurvey(userId: string): Promise<boolean> {
-  const { data } = await supabaseAdmin
-    .from('users')
-    .select('survey_completed')
-    .eq('id', userId)
-    .single();
+// Generate API key
+export async function createApiKey(userId: string, name: string = 'Default'): Promise<string> {
+  const key = `sk_live_${generateRandomString(32)}`;
 
-  return data?.survey_completed || false;
+  const { error } = await supabaseAdmin
+    .from('api_keys')
+    .insert({
+      user_id: userId,
+      key,
+      name,
+    });
+
+  if (error) throw error;
+  return key;
+}
+
+// Get user's API keys
+export async function getApiKeys(userId: string): Promise<Array<{
+  id: string;
+  name: string;
+  key_preview: string;
+  created_at: string;
+  last_used_at: string | null;
+}>> {
+  const { data } = await supabaseAdmin
+    .from('api_keys')
+    .select('id, name, key, created_at, last_used_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  return (data || []).map(k => ({
+    id: k.id,
+    name: k.name,
+    key_preview: `${k.key.slice(0, 12)}...${k.key.slice(-4)}`,
+    created_at: k.created_at,
+    last_used_at: k.last_used_at,
+  }));
+}
+
+// Delete API key
+export async function deleteApiKey(userId: string, keyId: string): Promise<void> {
+  await supabaseAdmin
+    .from('api_keys')
+    .delete()
+    .eq('id', keyId)
+    .eq('user_id', userId);
+}
+
+// Helper function
+function generateRandomString(length: number): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 }

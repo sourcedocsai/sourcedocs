@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { parseGitHubUrl, fetchCommits, fetchReleases, fetchTags } from '@/lib/github';
 import { generateChangelog } from '@/lib/changelog';
-import { canGenerate, recordGeneration, getUserByGithubId } from '@/lib/db';
+import { canGenerateWeb, recordGeneration, getUserByGithubId } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,10 +30,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const { allowed, usage, limit } = await canGenerate(user.id);
+    const { allowed, usage, limit, plan } = await canGenerateWeb(user.id);
     if (!allowed) {
       return NextResponse.json(
-        { error: 'Monthly limit reached', usage, limit, upgrade: true },
+        { error: 'Monthly limit reached', usage, limit, plan, upgrade: true },
         { status: 429 }
       );
     }
@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
       repo: parsed.repo,
       usage: usage + 1,
       limit,
+      plan,
     });
   } catch (error) {
     console.error('Changelog generation error:', error);
