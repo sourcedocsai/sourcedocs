@@ -1,5 +1,6 @@
 'use client';
 
+import { PricingModal } from '@/components/pricing-modal';
 import { useState, useEffect, Suspense } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -37,6 +38,8 @@ function HomeContent() {
   const [isPro, setIsPro] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [justUpgraded, setJustUpgraded] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
+  const [plan, setPlan] = useState<string>('free');
 
   // Fetch user status on load
   useEffect(() => {
@@ -69,6 +72,7 @@ function HomeContent() {
         const data = await res.json();
         setIsPro(data.isPro);
         setIsAdmin(data.isAdmin || false);
+	setPlan(data.plan || 'free');
         setUsage({ used: data.usage, limit: data.limit });
         setSurveyCompleted(data.surveyCompleted || false);
       
@@ -135,10 +139,16 @@ function HomeContent() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = () => {
+    setShowPricing(true);
+  };
+
+  const handleSelectPlan = async (selectedPlan: string) => {
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: selectedPlan }),
       });
       const data = await res.json();
 
@@ -165,12 +175,15 @@ function HomeContent() {
 		   Admin
 		 </a>
 	      )}
-              {isPro ? (
-                <span className="text-sm text-green-500 font-medium">Pro</span>
-              ) : usage && (
-                <span className="text-sm text-zinc-500">
-                  {usage.used}/{usage.limit} used
-                </span>
+              {plan !== 'free' && (
+                 <span className="text-sm text-green-500 font-medium capitalize">
+                    {plan.replace('_', ' ')}
+                 </span>
+              )}
+              {plan === 'free' && usage && (
+                 <span className="text-sm text-zinc-500">
+                    {usage.used}/{usage.limit} used
+                 </span>
               )}
               <img
                 src={session.user?.image || ''}
@@ -253,7 +266,7 @@ function HomeContent() {
                   onClick={handleUpgrade}
                   className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium transition-colors"
                 >
-                  Upgrade to Pro — $8/month
+                  Upgrade Your Plan
                 </button>
                 {!surveyCompleted && (
                   <button
@@ -324,6 +337,14 @@ function HomeContent() {
             setSurveyCompleted(true);
           }}
         />
+      )}
+      {/* Pricing Modal */}
+      {showPricing && (
+         <PricingModal 
+            currentPlan={plan}
+            onClose={() => setShowPricing(false)}
+            onSelectPlan={handleSelectPlan} 
+         />
       )}
     </main>
   );

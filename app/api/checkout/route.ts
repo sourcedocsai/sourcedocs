@@ -4,10 +4,10 @@ import { authOptions } from '@/lib/auth';
 import { getUserByGithubId } from '@/lib/db';
 import { stripe } from '@/lib/stripe';
 
-const PLAN_PRICES: Record<string, string> = {
-  web_pro: process.env.STRIPE_PRICE_WEB_PRO!,
-  api_pro: process.env.STRIPE_PRICE_API_PRO!,
-  bundle: process.env.STRIPE_PRICE_BUNDLE!,
+const PLAN_PRICES: Record<string, string | undefined> = {
+  web_pro: process.env.STRIPE_PRICE_WEB_PRO,
+  api_pro: process.env.STRIPE_PRICE_API_PRO,
+  bundle: process.env.STRIPE_PRICE_BUNDLE,
 };
 
 export async function POST(request: NextRequest) {
@@ -17,10 +17,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const { plan } = await request.json();
+    // Handle empty body or missing plan
+    let plan = 'web_pro'; // default
+    try {
+      const body = await request.json();
+      if (body.plan && PLAN_PRICES[body.plan]) {
+        plan = body.plan;
+      }
+    } catch {
+      // Empty body, use default plan
+    }
 
-    if (!plan || !PLAN_PRICES[plan]) {
-      return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
+    const priceId = PLAN_PRICES[plan];
+    if (!priceId) {
+      return NextResponse.json({ error: 'Invalid plan or price not configured' }, { status: 400 });
     }
 
     const githubId = (session.user as any).githubId;
@@ -35,7 +45,7 @@ export async function POST(request: NextRequest) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: PLAN_PRICES[plan],
+          price: priceId,
           quantity: 1,
         },
       ],
