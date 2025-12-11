@@ -2,118 +2,76 @@
 
 # SourceDocs
 
-**Generate professional documentation for your GitHub repos in seconds.**
+**Turn any GitHub repo into professional documentation in seconds.**
 
-[Quick Start](#quick-start) · [Features](#features) · [API](#api)
+[See It Work](#-see-it-work) · [Features](#what-you-get) · [API](#api)
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-000000?logo=nextjs&logoColor=white)](https://nextjs.org/)
-[![Vercel](https://img.shields.io/badge/Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com/)
+[![Anthropic](https://img.shields.io/badge/Claude-3.5-orange)](https://www.anthropic.com/)
 
 </div>
 
 ---
 
 <p align="center">
-  <i>Your AI tech writer that turns messy codebases into polished documentation.</i>
+  <i>Your AI tech writer that transforms messy codebases into polished documentation.</i>
 </p>
 
 ---
 
-## ⚡ Quick Start
-
-Drop in any GitHub URL and get instant documentation:
+## ⚡ See It Work
 
 ```bash
-# Visit the app
-https://sourcedocs.vercel.app
+# Paste any GitHub URL
+https://github.com/vercel/next.js
 
-# Enter your repo URL
-https://github.com/username/project
-
-# Generate → Copy → Done
+# Select document type → Generate
+# Get professional README in 10 seconds
 ```
 
-Works with any public repository. No setup required.
+Works with **any** public repository. Zero setup required.
 
 ---
 
 ## What You Get
 
-| | |
-|:--|:--|
-| **README** — Professional project documentation | **CHANGELOG** — Version history and releases |
-| **CONTRIBUTING** — Guidelines for contributors | **LICENSE** — Legal terms and permissions |
-| **CODE OF CONDUCT** — Community standards | **Smart Analysis** — Context-aware content |
+| Document Type | What It Does |
+|:--------------|:-------------|
+| **README** — Project overview that actually explains things | **CHANGELOG** — Version history with proper formatting |
+| **CONTRIBUTING** — Guidelines that encourage contributions | **LICENSE** — Legal terms that make sense |
+| **CODE OF CONDUCT** — Community standards done right | **Smart Analysis** — AI reads your entire codebase |
 
 ---
 
-## Features
+## How It Actually Works
 
-**→ AI-Powered Analysis**  
-Uses Claude 3.5 to understand your codebase structure, dependencies, and purpose.
+**→ Repository Analysis**  
+Claude 3.5 reads your package.json, file structure, and code patterns to understand what your project does.
 
-**→ Multiple Document Types**  
-Generate README, CHANGELOG, CONTRIBUTING guides, LICENSE files, and CODE OF CONDUCT.
-
-**→ GitHub Integration**  
-Sign in with GitHub. Automatically fetches repository data and file structure.
+**→ Context-Aware Generation**  
+Creates documentation that matches your tech stack. React projects get React examples. API projects get endpoint docs.
 
 **→ Professional Templates**  
-Creates documentation that follows industry best practices and conventions.
+Follows documentation best practices used by top open-source projects.
 
-**→ Instant Copy-Paste**  
-Generated markdown ready to commit directly to your repository.
+**→ Multiple Formats**  
+More than README files. Generate the full documentation suite your project needs.
 
 ---
 
-## How It Works
+## Quick Start
 
-1. **Authenticate** with your GitHub account
+1. **Sign in** with GitHub (required for API access)
 2. **Paste** any public repository URL
-3. **Select** document type (README, CHANGELOG, etc.)
-4. **Generate** with AI analysis
-5. **Copy** and commit to your repo
+3. **Choose** document type (README, CHANGELOG, etc.)
+4. **Generate** → **Copy** → **Commit**
 
-The AI analyzes your:
-- Package.json dependencies
-- File structure and organization  
-- Code patterns and frameworks
+The AI analyzes:
+- Dependencies and frameworks
+- File organization patterns
+- Code structure and complexity
 - Repository metadata
-
----
-
-## Tech Stack
-
-Built with modern tools for reliability and speed:
-
-```typescript
-// Core Framework
-Next.js 16 + React 19 + TypeScript 5
-
-// AI Integration
-Anthropic Claude 3.5 Sonnet
-
-// Authentication & Database
-NextAuth.js + Supabase
-
-// Payments & Analytics
-Stripe + Vercel Analytics
-```
-
----
-
-## API
-
-The service provides REST endpoints for programmatic access:
-
-| Endpoint | Purpose |
-|:---------|:--------|
-| `/api/readme` | Generate README documentation |
-| `/api/changelog` | Create version history |
-| `/api/contributing` | Build contributor guidelines |
-| `/api/license` | Generate license files |
-| `/api/codeofconduct` | Create community standards |
 
 ---
 
@@ -124,46 +82,84 @@ The service provides REST endpoints for programmatic access:
 | **Free** | 10 generations | $0 |
 | **Pro** | Unlimited | $5/month |
 
-Rate limits reset monthly. Upgrade anytime for unlimited access.
+Limits reset monthly. No hidden fees.
+
+---
+
+## API Reference
+
+| Endpoint | Purpose | Method |
+|:---------|:--------|:-------|
+| `/api/readme` | Generate README documentation | POST |
+| `/api/changelog` | Create version history | POST |
+| `/api/contributing` | Build contributor guidelines | POST |
+| `/api/license` | Generate license files | POST |
+| `/api/codeofconduct` | Create community standards | POST |
+
+```typescript
+// Example API call
+const response = await fetch('/api/readme', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ url: 'https://github.com/user/repo' })
+})
+
+const { content } = await response.json()
+// → Professional README markdown
+```
+
+---
+
+## Tech Stack
+
+Built for reliability and speed:
+
+```typescript
+// Core
+Next.js 16 + React 19 + TypeScript 5
+
+// AI Integration  
+Anthropic Claude 3.5 Sonnet
+
+// Infrastructure
+Supabase + NextAuth.js + Stripe + Vercel
+```
+
+---
+
+## Why SourceDocs?
+
+Documentation takes **hours to write**. We do it in **10 seconds**.
+
+- **Actually Smart** — Understands your tech stack and project structure
+- **GitHub Native** — Built for the GitHub workflow developers already use  
+- **Multiple Formats** — Complete documentation suite, not just README files
+- **Professional Quality** — Follows patterns from successful open-source projects
+
+Stop writing documentation from scratch. Let AI handle the heavy lifting.
 
 ---
 
 ## Local Development
 
 ```bash
-# Clone and install
 git clone https://github.com/username/sourcedocs
 cd sourcedocs
 npm install
 
 # Set up environment variables
 cp .env.example .env.local
-# Add your API keys for Claude, Supabase, etc.
+# Add API keys for Anthropic, Supabase, etc.
 
-# Run development server
 npm run dev
+# → http://localhost:3000
 ```
-
-Visit `http://localhost:3000` to see the app.
-
----
-
-## Why SourceDocs?
-
-Writing good documentation takes hours. We do it in seconds.
-
-- **Context-Aware** — Understands your tech stack and project structure
-- **Professional Quality** — Follows documentation best practices
-- **Multiple Formats** — More than just README files
-- **GitHub Native** — Built for the GitHub workflow
-
-Stop spending hours on documentation. Let AI handle the heavy lifting.
 
 ---
 
 ## Contributing
 
-Contributions welcome! Please check out our [contributing guidelines](CONTRIBUTING.md).
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ```bash
 git clone https://github.com/username/sourcedocs
@@ -175,8 +171,8 @@ npm run dev
 
 <div align="center">
 
-**[Website](https://sourcedocs.vercel.app)** · **[Documentation](./docs)** · **[Issues](https://github.com/username/sourcedocs/issues)**
+**[Generate Docs](https://sourcedocs.vercel.app)** · **[API Docs](#api)** · **[Support](mailto:support@sourcedocs.dev)**
 
-Built with ❤️ by developers, for developers
+Built with ❤️ for the developer community
 
 </div>
