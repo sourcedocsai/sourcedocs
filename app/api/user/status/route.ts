@@ -21,10 +21,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       isPro: user.is_pro,
+      isAdmin: user.is_admin,
       surveyCompleted: user.survey_completed,
       usage,
       limit: user.is_pro ? -1 : 1,
     });
+
   } catch (error) {
     console.error('Status error:', error);
     return NextResponse.json({ error: 'Failed to get status' }, { status: 500 });

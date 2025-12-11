@@ -35,6 +35,7 @@ function HomeContent() {
   const [showSurvey, setShowSurvey] = useState(false);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [isPro, setIsPro] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [justUpgraded, setJustUpgraded] = useState(false);
 
   // Fetch user status on load
@@ -67,6 +68,7 @@ function HomeContent() {
       if (res.ok) {
         const data = await res.json();
         setIsPro(data.isPro);
+        setIsAdmin(data.isAdmin || false);
         setUsage({ used: data.usage, limit: data.limit });
         setSurveyCompleted(data.surveyCompleted || false);
       
@@ -158,6 +160,10 @@ function HomeContent() {
             <span className="text-sm text-zinc-500">Loading...</span>
           ) : session ? (
             <div className="flex items-center gap-4">
+	      {isAdmin && (href="/admin" className="text-sm text-red-400 font-medium px-2 py-1 bg-red-400/10 rounded hover:bg-red-400/20 transition-colors">
+	          iAdmin
+	        </a>
+	      )}
               {isPro ? (
                 <span className="text-sm text-green-500 font-medium">Pro</span>
               ) : usage && (
