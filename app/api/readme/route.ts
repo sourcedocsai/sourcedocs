@@ -7,7 +7,6 @@ import { canGenerate, recordGeneration, getUserByGithubId } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
@@ -24,37 +23,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid GitHub URL' }, { status: 400 });
     }
 
-    // Get user from database
     const githubId = (session.user as any).githubId;
     const user = await getUserByGithubId(githubId);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Check usage limits
     const { allowed, usage, limit } = await canGenerate(user.id);
     if (!allowed) {
       return NextResponse.json(
-        { 
-          error: 'Monthly limit reached', 
-          usage, 
-          limit,
-          upgrade: true 
-        }, 
+        { error: 'Monthly limit reached', usage, limit, upgrade: true },
         { status: 429 }
       );
     }
 
-    // Fetch repo data and generate
+    const startTime = Date.now();
+
     const repoData = await fetchRepoData(parsed.owner, parsed.repo);
     const readme = await generateReadme(repoData);
 
-    // Record usage
-    await recordGeneration(user.id, 'readme', url, 'web');
+    const generationTimeMs = Date.now() - startTime;
+    await recordGeneration(user.id, 'readme', url, 'web', generationTimeMs);
 
-    return NextResponse.json({ 
-      readme, 
+    return NextResponse.json({
+      readme,
       repo: repoData.name,
       usage: usage + 1,
       limit,

@@ -26,5 +26,6 @@ export interface Generation {
   doc_type: string;
   repo_url: string;
   source: string;
+  generation_time_ms: number | null;
   created_at: string;
 }

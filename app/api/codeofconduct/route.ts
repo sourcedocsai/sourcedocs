@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     const githubId = (session.user as any).githubId;
     const user = await getUserByGithubId(githubId);
-    
+
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -33,20 +33,23 @@ export async function POST(request: NextRequest) {
     const { allowed, usage, limit } = await canGenerate(user.id);
     if (!allowed) {
       return NextResponse.json(
-        { error: 'Monthly limit reached', usage, limit, upgrade: true }, 
+        { error: 'Monthly limit reached', usage, limit, upgrade: true },
         { status: 429 }
       );
     }
+
+    const startTime = Date.now();
 
     const codeofconduct = await generateCodeOfConduct({
       name: parsed.repo,
       owner: parsed.owner,
     });
 
-    await recordGeneration(user.id, 'codeofconduct', url, 'web');
+    const generationTimeMs = Date.now() - startTime;
+    await recordGeneration(user.id, 'codeofconduct', url, 'web', generationTimeMs);
 
-    return NextResponse.json({ 
-      codeofconduct, 
+    return NextResponse.json({
+      codeofconduct,
       repo: parsed.repo,
       usage: usage + 1,
       limit,

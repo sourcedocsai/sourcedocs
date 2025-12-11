@@ -47,12 +47,12 @@ export async function getUserByGithubId(githubId: string): Promise<User | null> 
   return data as User | null;
 }
 
-// Record a generation
 export async function recordGeneration(
   userId: string,
   docType: string,
   repoUrl: string,
-  source: string = 'web'
+  source: string = 'web',
+  generationTimeMs?: number
 ): Promise<Generation> {
   const { data, error } = await supabaseAdmin
     .from('generations')
@@ -61,6 +61,7 @@ export async function recordGeneration(
       doc_type: docType,
       repo_url: repoUrl,
       source,
+      generation_time_ms: generationTimeMs || null,
     })
     .select()
     .single();

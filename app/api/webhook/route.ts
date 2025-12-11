@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
           .from('users')
           .update({
             is_pro: true,
+	    upgraded_at: new Date().toISOString(),
             stripe_customer_id: session.customer as string,
             stripe_subscription_id: session.subscription as string,
           })
@@ -65,7 +66,9 @@ export async function POST(request: NextRequest) {
 
       const { error } = await supabaseAdmin
         .from('users')
-        .update({ is_pro: false })
+        .update({ is_pro: false,
+ 	          canceled_at: new Date().toISOString(),
+        })
         .eq('stripe_subscription_id', subscription.id);
 
       if (error) {
