@@ -176,9 +176,9 @@ function HomeContent() {
 		 </a>
 	      )}
               {plan !== 'free' && (
-                 <span className="text-sm text-green-500 font-medium capitalize">
-                    {plan.replace('_', ' ')}
-                 </span>
+	 	 <a href="/settings" className="text-sm text-green-400 font-medium px-2 py-1 bg-green-400/10 rounded hover:bg-green-400/20 transition-colors capitalize">
+		    {plan.replace('_', ' ')}
+		 </a>
               )}
               {plan === 'free' && usage && (
                  <span className="text-sm text-zinc-500">
