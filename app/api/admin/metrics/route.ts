@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
 
     // Process doc types
     const docTypeCounts: Record<string, number> = {};
-    generationsResult.data?.forEach((g: any) => {
+    docTypesResult.data?.forEach((g: any) => {
       docTypeCounts[g.doc_type] = (docTypeCounts[g.doc_type] || 0) + 1;
     });
 
