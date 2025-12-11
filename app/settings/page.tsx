@@ -239,16 +239,10 @@ export default function SettingsPage() {
 
               {/* API Docs Link */}
               <div className="mt-6 pt-6 border-t border-zinc-800">
-                <p className="text-zinc-400 text-sm">
+              <p className="text-zinc-400 text-sm">
                   View the{' '}
-                  
-                    href="/api/v1"
-                    target="_blank"
-                    className="text-white underline hover:no-underline"
-                  >
-                    API documentation
-                  </a>{' '}
-                  to get started.
+                  <a href="/api/v1" target="_blank" className="text-white underline hover:no-underline">API documentation</a>
+                  {' '}to get started.
                 </p>
               </div>
             </div>
