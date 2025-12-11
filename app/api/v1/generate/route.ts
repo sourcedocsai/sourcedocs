@@ -102,6 +102,19 @@ export async function POST(request: NextRequest) {
     await trackApiUsage(auth.user.id);
     await recordGeneration(auth.user.id, doc_type, repo_url, 'api', generationTimeMs);
 
+    // Check if raw markdown requested
+    const { searchParams } = new URL(request.url);
+    const format = searchParams.get('format');
+
+    if (format === 'raw') {
+      return new NextResponse(content, {
+        headers: {
+          'Content-Type': 'text/markdown; charset=utf-8',
+          'Content-Disposition': `attachment; filename="${doc_type.toUpperCase()}.md"`,
+        },
+      });
+    }
+
     return NextResponse.json({
       success: true,
       doc_type,
