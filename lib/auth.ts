@@ -24,11 +24,11 @@ export const authOptions: NextAuthOptions = {
         
         // Save/get user from database
         const user = await getOrCreateUser({
-          githubId: String(ghProfile.id),
-          email: ghProfile.email,
+          id: String(ghProfile.id),
+          login: ghProfile.login,
           name: ghProfile.name,
+          email: ghProfile.email,
           avatar_url: ghProfile.avatar_url,
-          username: ghProfile.login,
         });
 
         token.githubId = String(ghProfile.id);
