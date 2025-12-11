@@ -98,12 +98,9 @@ export default function AdminPage() {
               Admin
             </span>
           </div>
-          <button
-            onClick={() => fetchMetrics()}
-            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm transition-colors"
-          >
-            Refresh
-          </button>
+	  <span className="text-sm text-zinc-500">
+            {new Date().toLocaleTimeString()}
+          </span>
         </div>
       </header>
 
