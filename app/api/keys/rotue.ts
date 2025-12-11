@@ -57,8 +57,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name } = await request.json();
-    const key = await createApiKey(user.id, name || 'Default');
+    let name = 'Default';
+    try {
+      const body = await request.json();
+      if (body.name) {
+        name = body.name;
+      }
+    } catch {
+      // Empty body, use default name
+    }
+
+    const key = await createApiKey(user.id, name);
 
     return NextResponse.json({
       key,
@@ -66,6 +75,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Create API key error:', error);
-    return NextResponse.json({ error: 'Failed to create API key' }, { status: 500 });
+    return NextResponse.json(
+      { error: `Failed to create API key: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { status: 500 }
+    );
   }
 }
