@@ -136,12 +136,7 @@ export default function SettingsPage() {
                   </p>
                 )}
               </div>
-              
-                href="/"
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm transition-colors"
-              >
-                Change Plan
-              </a>
+              <a href="/" className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm transition-colors">Change Plan</a> 
             </div>
           </div>
         </section>
@@ -155,12 +150,7 @@ export default function SettingsPage() {
               <p className="text-zinc-400 mb-4">
                 API access requires an API Pro or Bundle plan.
               </p>
-              
-                href="/"
-                className="inline-block px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium transition-colors"
-              >
-                Upgrade to Get API Access
-              </a>
+              <a href="/" className="inline-block px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium transition-colors">Upgrade to Get API Access</a>  
             </div>
           ) : (
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
