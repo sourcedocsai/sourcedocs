@@ -106,22 +106,23 @@ export async function POST(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const format = searchParams.get('format');
 
-    if (format === 'raw') {
-      return new NextResponse(content, {
-        headers: {
-          'Content-Type': 'text/markdown; charset=utf-8',
-          'Content-Disposition': `attachment; filename="${doc_type.toUpperCase()}.md"`,
-        },
+    if (format === 'json') {
+      return NextResponse.json({
+        success: true,
+        doc_type,
+        repo: parsed.repo,
+        content,
+        generation_time_ms: generationTimeMs,
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      doc_type,
-      repo: parsed.repo,
-      content,
-      generation_time_ms: generationTimeMs,
+    return new NextResponse(content, {
+      headers: {
+        'Content-Type': 'text/markdown; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${doc_type.toUpperCase()}.md"`,
+      },
     });
+
   } catch (error) {
     console.error('API generation error:', error);
     return NextResponse.json(
