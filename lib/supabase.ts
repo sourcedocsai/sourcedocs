@@ -14,9 +14,13 @@ export interface User {
   avatar_url: string | null;
   username: string | null;
   is_pro: boolean;
+  is_admin: boolean;
   survey_completed: boolean;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+  upgraded_at: string | null;
+  canceled_at: string | null;
+  referral_source: string | null;
   created_at: string;
 }
 
