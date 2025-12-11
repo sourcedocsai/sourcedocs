@@ -274,13 +274,8 @@ export default function AdminPage() {
                           {gen.doc_type.toUpperCase()}
                         </span>
                       </td>
-                      <td className="py-2 max-w-xs">
-                        
-                          href={gen.repo_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-zinc-300 hover:text-white truncate block"
-                        >
+		      <td className="py-2 max-w-xs">
+                        <a href={gen.repo_url} target="_blank" rel="noopener noreferrer" className="text-zinc-300 hover:text-white truncate block">
                           {gen.repo_url.replace('https://github.com/', '')}
                         </a>
                       </td>
