@@ -16,6 +16,7 @@ interface Metrics {
     surveyResponses: number;
   };
   docTypes: Record<string, number>;
+  sources: Record<string, number>;
   wouldPay: Record<string, number>;
   roles: Record<string, number>;
   teamSizes: Record<string, number>;
@@ -136,6 +137,26 @@ export default function AdminPage() {
                   />
                 ))}
             </div>
+          </section>
+
+          {/* Generation Sources */}
+          <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+            <h3 className="text-md font-semibold mb-4">Generations by Source</h3>
+              <div className="space-y-3">
+                  {Object.entries(metrics.sources || {})
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([source, count]) => (
+                      <BarRow
+                        key={source}
+                        label={source.toUpperCase()}
+                        value={count}
+                        max={Math.max(...Object.values(metrics.sources || { web: 1 }))}
+                      />
+                    ))}
+                  {Object.keys(metrics.sources || {}).length === 0 && (
+                      <p className="text-zinc-500 text-sm">No data yet</p>
+                  )}
+                </div>
           </section>
 
           {/* Would Pay */}
