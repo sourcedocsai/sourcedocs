@@ -17,6 +17,7 @@ interface Metrics {
   };
   docTypes: Record<string, number>;
   sources: Record<string, number>;
+  plans: Record<string, number>;
   wouldPay: Record<string, number>;
   roles: Record<string, number>;
   teamSizes: Record<string, number>;
@@ -25,6 +26,7 @@ interface Metrics {
     username: string;
     email: string;
     is_pro: boolean;
+    plan: string;
     created_at: string;
   }>;
   recentGenerations: Array<{
@@ -158,6 +160,26 @@ export default function AdminPage() {
                   )}
                 </div>
           </section>
+
+          {/* Plans Distribution */}
+          <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+            <h3 className="text-md font-semibold mb-4">Users by Plan</h3>
+            <div className="space-y-3">
+               {Object.entries(metrics.plans || {})
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([plan, count]) => (
+                     <BarRow
+                        key={plan}
+                        label={plan.replace('_', ' ').toUpperCase()}
+                        value={count}
+                        max={Math.max(...Object.values(metrics.plans || { free: 1 }))}
+                     />
+                  ))}
+               {Object.keys(metrics.plans || {}).length === 0 && (
+                 <p className="text-zinc-500 text-sm">No data yet</p>
+               )}
+             </div>
+           </section>
 
           {/* Would Pay */}
           <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
