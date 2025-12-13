@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXTAUTH_URL}?checkout=complete`,
+      success_url: `${process.env.NEXTAUTH_URL}?upgraded=true`,
       cancel_url: `${process.env.NEXTAUTH_URL}?canceled=true`,
       client_reference_id: user.id,
       customer_email: user.email || undefined,

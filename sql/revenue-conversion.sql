@@ -1,8 +1,15 @@
-i-- Monthly Recurring Revenue (MRR)
+-- Monthly Recurring Revenue (MRR)
 SELECT 
-  COUNT(*) * 8 as mrr_dollars
+  SUM(
+    CASE plan
+      WHEN 'web_pro' THEN 8
+      WHEN 'api_pro' THEN 15
+      WHEN 'bundle' THEN 20
+      ELSE 0
+    END
+  ) as mrr_dollars
 FROM users
-WHERE is_pro = true;
+WHERE plan != 'free';
 
 -- Conversion funnel
 SELECT 

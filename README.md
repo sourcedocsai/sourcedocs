@@ -79,8 +79,10 @@ The AI analyzes:
 
 | Plan | Documents/Month | Price |
 |:-----|:----------------|:------|
-| **Free** | 10 generations | $0 |
-| **Pro** | Unlimited | $5/month |
+| **Free** | 1 generation | $0 |
+| **Web Pro** | Unlimited | $8/month |
+| **API Pro** | 100 API calls | $15/month |
+| **Bundle** | Unlimited + 100 API | $20/month |
 
 Limits reset monthly. No hidden fees.
 

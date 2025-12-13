@@ -317,3 +317,7 @@ function generateRandomString(length: number): string {
   }
   return result;
 }
+
+export async function trackApiUsage(userId: string): Promise<void> {
+  await incrementApiUsage(userId);
+}
