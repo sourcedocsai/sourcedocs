@@ -1,3 +1,12 @@
+/**
+ * @fileoverview Main page component for SourceDocs.ai - A tool for generating various types
+ * of documentation from GitHub repositories including README files, changelogs, contributing
+ * guidelines, and code comments.
+ * 
+ * @module page
+ * @author SourceDocs.ai Team
+ */
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -9,8 +18,15 @@ import rehypeRaw from 'rehype-raw';
 import { track } from '@vercel/analytics';
 import { SurveyModal } from '@/components/survey-modal';
 
+/**
+ * Supported documentation types that can be generated
+ */
 type DocType = 'readme' | 'changelog' | 'contributing' | 'license' | 'codeofconduct' | 'comments';
 
+/**
+ * Configuration object defining properties for each documentation type
+ * including API endpoints, labels, keys, placeholders, and descriptions
+ */
 const docConfig: Record<DocType, {
   endpoint: string;
   label: string;
@@ -62,6 +78,18 @@ const docConfig: Record<DocType, {
   },
 };
 
+/**
+ * Extracts owner and repository name from a GitHub repository URL
+ * 
+ * @param url - GitHub repository URL
+ * @returns Object containing owner and repo name, or null if parsing fails
+ * 
+ * @example
+ * ```typescript
+ * const result = parseRepoUrl('https://github.com/microsoft/typescript');
+ * // Returns: { owner: 'microsoft', repo: 'typescript' }
+ * ```
+ */
 function parseRepoUrl(url: string): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
   if (!match) return null;
@@ -71,6 +99,18 @@ function parseRepoUrl(url: string): { owner: string; repo: string } | null {
   };
 }
 
+/**
+ * Extracts file path and branch information from a GitHub file URL
+ * 
+ * @param url - GitHub file URL (blob format)
+ * @returns Object containing file path and branch, or null if parsing fails
+ * 
+ * @example
+ * ```typescript
+ * const result = parseFileUrl('https://github.com/owner/repo/blob/main/src/index.ts');
+ * // Returns: { branch: 'main', filePath: 'src/index.ts' }
+ * ```
+ */
 function parseFileUrl(url: string): { filePath: string; branch: string } | null {
   const match = url.match(/github\.com\/[^\/]+\/[^\/]+\/blob\/([^\/]+)\/(.+)$/);
   if (!match) return null;
@@ -80,6 +120,12 @@ function parseFileUrl(url: string): { filePath: string; branch: string } | null 
   };
 }
 
+/**
+ * Banner component displayed when a pull request is successfully created
+ * 
+ * @param props - Component props
+ * @param props.prResult - Pull request information including URL, number, and file
+ */
 function PrSuccessBanner({ prResult }: { prResult: { url: string; number: number; file: string } }) {
   return (
     <div className="px-4 py-3 border-b border-zinc-800 bg-green-900/20">
@@ -91,6 +137,12 @@ function PrSuccessBanner({ prResult }: { prResult: { url: string; number: number
   );
 }
 
+/**
+ * Banner component displayed when there's an error creating a pull request
+ * 
+ * @param props - Component props
+ * @param props.message - Error message to display
+ */
 function PrErrorBanner({ message }: { message: string }) {
   return (
     <div className="px-4 py-3 border-b border-zinc-800 bg-red-900/20">
@@ -99,34 +151,73 @@ function PrErrorBanner({ message }: { message: string }) {
   );
 }
 
+/**
+ * Main content component for the SourceDocs.ai home page
+ * Handles documentation generation, user authentication, and pull request creation
+ */
 function HomeContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const upgraded = searchParams.get('upgraded');
   const canceled = searchParams.get('canceled');
 
+  /** GitHub repository or file URL input by user */
   const [url, setUrl] = useState('');
+  
+  /** Generated documentation content */
   const [output, setOutput] = useState('');
+  
+  /** Loading state for documentation generation */
   const [loading, setLoading] = useState(false);
+  
+  /** Error message from documentation generation */
   const [error, setError] = useState('');
+  
+  /** Whether the copy button shows "Copied!" feedback */
   const [copied, setCopied] = useState(false);
+  
+  /** Currently selected documentation type */
   const [docType, setDocType] = useState<DocType>('readme');
+  
+  /** User's API usage statistics */
   const [usage, setUsage] = useState<{ used: number; limit: number } | null>(null);
+  
+  /** Whether to show the user survey modal */
   const [showSurvey, setShowSurvey] = useState(false);
+  
+  /** Whether user has completed the survey */
   const [surveyCompleted, setSurveyCompleted] = useState(false);
+  
+  /** Whether user has Pro subscription */
   const [isPro, setIsPro] = useState(false);
+  
+  /** Whether user has admin privileges */
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  /** File information for code comments documentation type */
   const [fileInfo, setFileInfo] = useState<{ name: string; path: string } | null>(null);
+  
+  /** Loading state for pull request creation */
   const [prLoading, setPrLoading] = useState(false);
+  
+  /** Successful pull request creation result */
   const [prResult, setPrResult] = useState<{ url: string; number: number; file: string } | null>(null);
+  
+  /** Error message from pull request creation */
   const [prError, setPrError] = useState('');
 
+  /**
+   * Fetch user status on session change or upgrade completion
+   */
   useEffect(() => {
     if (session) {
       fetchUserStatus();
     }
   }, [session, upgraded]);
 
+  /**
+   * Fetches current user's status including usage limits, Pro status, and survey completion
+   */
   const fetchUserStatus = async () => {
     try {
       const res = await fetch('/api/user/status');
@@ -142,6 +233,10 @@ function HomeContent() {
     }
   };
 
+  /**
+   * Handles documentation generation by calling the appropriate API endpoint
+   * Manages authentication, loading states, error handling, and analytics tracking
+   */
   const handleGenerate = async () => {
     if (!url.trim()) return;
     if (!session) {
@@ -201,12 +296,19 @@ function HomeContent() {
     }
   };
 
+  /**
+   * Copies the generated documentation to clipboard and shows feedback
+   */
   const handleCopy = async () => {
     await navigator.clipboard.writeText(output);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  /**
+   * Downloads the generated documentation as a file
+   * Uses appropriate filename based on documentation type and file info
+   */
   const handleDownload = () => {
     const filename = docType === 'comments' && fileInfo
       ? fileInfo.name
@@ -223,6 +325,10 @@ function HomeContent() {
     window.URL.revokeObjectURL(downloadUrl);
   };
 
+  /**
+   * Creates a pull request with the generated documentation
+   * Handles different request bodies for repository-level docs vs file-level comments
+   */
   const handleCreatePR = async () => {
     const parsed = parseRepoUrl(url);
     if (!parsed) {
@@ -290,11 +396,19 @@ function HomeContent() {
     }
   };
 
+  /**
+   * Handles survey completion by updating state
+   */
   const handleSurveyComplete = () => {
     setSurveyCompleted(true);
     setShowSurvey(false);
   };
 
+  /**
+   * Handles documentation type change and resets relevant state
+   * 
+   * @param type - The new documentation type to select
+   */
   const handleDocTypeChange = (type: DocType) => {
     setDocType(type);
     setUrl('');
@@ -307,6 +421,7 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
+      {/* Header with branding, user status, and navigation */}
       <header className="border-b border-zinc-800 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-semibold">SourceDocs.ai</h1>
@@ -328,10 +443,12 @@ function HomeContent() {
         </div>
       </header>
 
+      {/* Hero section with title, description, and documentation generation form */}
       <section className="max-w-4xl mx-auto px-6 py-16 text-center">
         <h2 className="text-4xl font-bold mb-4">Documentation in seconds, not hours</h2>
         <p className="text-zinc-400 text-lg mb-10">Paste a GitHub URL. Get professional docs. That is it.</p>
 
+        {/* Documentation type selector buttons */}
         <div className="flex flex-wrap justify-center gap-2 mb-4">
           {(Object.keys(docConfig) as DocType[]).map((type) => (
             <button
@@ -346,6 +463,7 @@ function HomeContent() {
 
         <p className="text-zinc-500 text-sm mb-6">{docConfig[docType].description}</p>
 
+        {/* URL input and generate button */}
         <div className="flex gap-3 max-w-2xl mx-auto">
           <input
             type="text"
@@ -364,6 +482,7 @@ function HomeContent() {
           </button>
         </div>
 
+        {/* Error message with upgrade option for usage limits */}
         {error && (
           <div className="mt-4 text-red-400 text-sm">
             {error}
@@ -385,9 +504,11 @@ function HomeContent() {
         )}
       </section>
 
+      {/* Generated documentation output section */}
       {output && (
         <section className="max-w-4xl mx-auto px-6 pb-16">
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+            {/* Output header with file info and action buttons */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
               <span className="text-sm text-zinc-400">{fileInfo ? (fileInfo.name + ' (' + fileInfo.path + ')') : docConfig[docType].label}</span>
               <div className="flex gap-2">
@@ -397,9 +518,11 @@ function HomeContent() {
               </div>
             </div>
 
+            {/* Pull request status banners */}
             {prResult && <PrSuccessBanner prResult={prResult} />}
             {prError && <PrErrorBanner message={prError} />}
 
+            {/* Documentation content display */}
             <div className="p-6 max-h-[600px] overflow-y-auto">
               {docType === 'comments' ? (
                 <pre className="text-sm text-zinc-300 whitespace-pre-wrap font-mono">{output}</pre>
@@ -413,11 +536,17 @@ function HomeContent() {
         </section>
       )}
 
+      {/* Survey modal for user feedback */}
       {showSurvey && <SurveyModal onComplete={handleSurveyComplete} onClose={() => setShowSurvey(false)} />}
     </main>
   );
 }
 
+/**
+ * Home page component with Suspense boundary for loading state
+ * 
+ * @returns JSX element with suspense wrapper around HomeContent
+ */
 export default function Home() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center"><p className="text-zinc-400">Loading...</p></div>}>
