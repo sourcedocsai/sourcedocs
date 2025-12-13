@@ -197,70 +197,63 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
-      {/* Header */}
-      <header className="border-b border-zinc-800 px-6 py-4">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-semibold">SourceDocs.ai</h1>
-          <div className="flex items-center gap-4">
-            {upgraded && (
-              <span className="text-green-400 text-sm">✓ Upgraded to Pro!</span>
-            )}
-            {canceled && (
-              <span className="text-zinc-400 text-sm">Payment canceled</span>
-            )}
-            {session ? (
-              <div className="flex items-center gap-3">
-                {/* Badges */}
-                {isAdmin && (
-                  
-                    href="/admin"
-                    className="text-xs text-red-400 font-medium px-2 py-0.5 bg-red-400/10 rounded hover:bg-red-400/20 transition-colors"
-                  >
-                    Admin
-                  </a>
-                )}
-                {isPro && (
-                  <span className="text-xs text-green-400 font-medium px-2 py-0.5 bg-green-400/10 rounded">
-                    Pro
-                  </span>
-                )}
+    {/* Header */}
+    <header className="border-b border-zinc-800 px-6 py-4">
+      <div className="max-w-5xl mx-auto flex items-center justify-between">
+        <h1 className="text-xl font-semibold">SourceDocs.ai</h1>
+        <div className="flex items-center gap-4">
+          {upgraded && (
+            <span className="text-green-400 text-sm">✓ Upgraded to Pro!</span>
+          )}
+          {canceled && (
+            <span className="text-zinc-400 text-sm">Payment canceled</span>
+          )}
+          {session ? (
+            <div className="flex items-center gap-3">
+              {isAdmin && (
                 
-                {/* Usage */}
-                {usage && (
-                  <span className="text-sm text-zinc-500">
-                    {isPro ? '∞' : `${usage.used}/${usage.limit}`} used
-                  </span>
-                )}
-                
-                {/* Username */}
-                <span className="text-sm text-zinc-400">
-                  {session.user?.name || (session.user as any)?.username}
-                </span>
-                
-                
-                  href="/settings"
-                  className="text-sm text-zinc-400 hover:text-zinc-200"
+                  href="/admin"
+                  className="text-xs text-red-400 font-medium px-2 py-0.5 bg-red-400/10 rounded hover:bg-red-400/20 transition-colors"
                 >
-                  Settings
+                  Admin
                 </a>
-                <button
-                  onClick={() => signOut()}
-                  className="text-sm text-zinc-500 hover:text-zinc-300"
-                >
-                  Sign out
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => signIn('github')}
-                className="px-4 py-2 bg-white text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-200 transition-colors"
+              )}
+              {isPro && (
+                <span className="text-xs text-green-400 font-medium px-2 py-0.5 bg-green-400/10 rounded">
+                  Pro
+                </span>
+              )}
+              {usage && (
+                <span className="text-sm text-zinc-500">
+                  {isPro ? '∞' : `${usage.used}/${usage.limit}`} used
+                </span>
+              )}
+              <span className="text-sm text-zinc-400">
+                {session.user?.name || (session.user as any)?.username}
+              </span>
+              
+                href="/settings"
+                className="text-sm text-zinc-400 hover:text-zinc-200"
               >
-                Sign in with GitHub
+                Settings
+              </a>
+              <button
+                onClick={() => signOut()}
+                className="text-sm text-zinc-500 hover:text-zinc-300"
+              >
+                Sign out
               </button>
-            )}
-          </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => signIn('github')}
+          className="px-4 py-2 bg-white text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-200 transition-colors">
+              Sign in with GitHub
+            </button>
+          )}
         </div>
-      </header>
+      </div>
+    </header>
 
       {/* Hero Section */}
       <section className="max-w-4xl mx-auto px-6 py-16 text-center">
