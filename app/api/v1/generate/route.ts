@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiRequest } from '@/lib/api-auth';
-import { canGenerateApi, recordGeneration, trackApiUsage } from '@/lib/db';
+import { canGenerateApi, recordGeneration } from '@/lib/db';
 import { parseGitHubUrl, fetchRepoData, fetchCommits, fetchReleases, fetchTags } from '@/lib/github';
 import { generateReadme } from '@/lib/claude';
 import { generateChangelog } from '@/lib/changelog';
@@ -9,12 +9,10 @@ import { generateLicense } from '@/lib/license';
 import { generateCodeOfConduct } from '@/lib/codeofconduct';
 import { parseGitHubFileUrl, fetchGitHubFileContent, generateCodeComments } from '@/lib/comments';
 
-const VALID_DOC_TYPES = ['readme', 'changelog', 'contributing', 'license', 'codeofconduct', 'comments'] as const;
-type DocType = typeof VALID_DOC_TYPES[number];
+type DocType = 'readme' | 'changelog' | 'contributing' | 'license' | 'codeofconduct' | 'comments';
 
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate via API key
     const auth = await authenticateApiRequest(request);
     if (!auth.success || !auth.user) {
       return NextResponse.json(
@@ -23,67 +21,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { doc_type, repo_url, file_url } = body;
-
-    // Validate doc_type
-    if (!doc_type || !VALID_DOC_TYPES.includes(doc_type)) {
-      return NextResponse.json(
-        { 
-          error: 'Invalid doc_type',
-          valid_types: VALID_DOC_TYPES,
-        },
-        { status: 400 }
-      );
-    }
-
-    // For comments, require file_url; for others, require repo_url
-    if (doc_type === 'comments') {
-      if (!file_url) {
-        return NextResponse.json(
-          { 
-            error: 'file_url is required for comments doc_type',
-            example: 'https://github.com/owner/repo/blob/main/src/file.ts'
-          },
-          { status: 400 }
-        );
-      }
-    } else {
-      if (!repo_url) {
-        return NextResponse.json(
-          { error: 'repo_url is required' },
-          { status: 400 }
-        );
-      }
-    }
-
     // Check API usage limits
     const { allowed, usage, limit } = await canGenerateApi(auth.user.id);
     if (!allowed) {
       return NextResponse.json(
-        { 
-          error: 'API limit reached',
-          usage,
-          limit,
-          upgrade: 'https://www.sourcedocs.ai/settings'
-        },
+        { error: 'API limit reached', usage, limit },
         { status: 429 }
+      );
+    }
+
+    const body = await request.json();
+    const { doc_type, repo_url, file_url } = body;
+
+    if (!doc_type) {
+      return NextResponse.json(
+        { error: 'doc_type is required' },
+        { status: 400 }
+      );
+    }
+
+    const validTypes: DocType[] = ['readme', 'changelog', 'contributing', 'license', 'codeofconduct', 'comments'];
+    if (!validTypes.includes(doc_type)) {
+      return NextResponse.json(
+        { error: `Invalid doc_type. Must be one of: ${validTypes.join(', ')}` },
+        { status: 400 }
       );
     }
 
     const startTime = Date.now();
     let content: string;
-    let responseData: Record<string, any> = {};
+    let responseData: Record<string, unknown> = {};
 
-    // Handle comments separately (uses file_url)
+    // Handle code comments (requires file_url instead of repo_url)
     if (doc_type === 'comments') {
+      if (!file_url) {
+        return NextResponse.json(
+          { error: 'file_url is required for comments doc_type' },
+          { status: 400 }
+        );
+      }
+
       const parsed = parseGitHubFileUrl(file_url);
       if (!parsed) {
         return NextResponse.json(
-          { 
-            error: 'Invalid GitHub file URL',
-            expected: 'https://github.com/owner/repo/blob/branch/path/to/file.ext'
-          },
+          { error: 'Invalid GitHub file URL' },
           { status: 400 }
         );
       }
@@ -119,7 +100,6 @@ export async function POST(request: NextRequest) {
       };
 
       const generationTimeMs = Date.now() - startTime;
-      await trackApiUsage(auth.user.id);
       await recordGeneration(auth.user.id, 'comments', file_url, 'api', generationTimeMs);
 
       return NextResponse.json({
@@ -132,6 +112,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle repo-based doc types
+    if (!repo_url) {
+      return NextResponse.json(
+        { error: 'repo_url is required' },
+        { status: 400 }
+      );
+    }
+
     const parsed = parseGitHubUrl(repo_url);
     if (!parsed) {
       return NextResponse.json(
@@ -188,8 +175,7 @@ export async function POST(request: NextRequest) {
 
     const generationTimeMs = Date.now() - startTime;
 
-    // Track usage
-    await trackApiUsage(auth.user.id);
+    // Record the generation (this tracks API usage)
     await recordGeneration(auth.user.id, doc_type, repo_url, 'api', generationTimeMs);
 
     return NextResponse.json({
