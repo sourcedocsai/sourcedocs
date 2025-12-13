@@ -212,9 +212,8 @@ function HomeContent() {
             <div className="flex items-center gap-3">
               {isAdmin && (
                 
-                  href="/admin"
-                  className="text-xs text-red-400 font-medium px-2 py-0.5 bg-red-400/10 rounded hover:bg-red-400/20 transition-colors"
-                >
+                  <a href="/admin"
+                  className="text-xs text-red-400 font-medium px-2 py-0.5 bg-red-400/10 rounded hover:bg-red-400/20 transition-colors">
                   Admin
                 </a>
               )}
@@ -232,9 +231,8 @@ function HomeContent() {
                 {session.user?.name || (session.user as any)?.username}
               </span>
               
-                href="/settings"
-                className="text-sm text-zinc-400 hover:text-zinc-200"
-              >
+              <a  href="/settings"
+                className="text-sm text-zinc-400 hover:text-zinc-200">
                 Settings
               </a>
               <button
