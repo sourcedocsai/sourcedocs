@@ -18,8 +18,6 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-const DOC_TYPES = ["readme", "changelog", "contributing", "license", "codeofconduct", "comments"];
-
 // Create server
 const server = new Server(
   {
@@ -91,18 +89,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (name === "generate_docs") {
       const { repo_url, doc_type } = args as { repo_url: string; doc_type: string };
 
-      // Validate inputs
       if (!repo_url || !repo_url.includes("github.com")) {
         throw new McpError(ErrorCode.InvalidParams, "Invalid GitHub URL");
       }
       if (!["readme", "changelog", "contributing", "license", "codeofconduct"].includes(doc_type)) {
         throw new McpError(
           ErrorCode.InvalidParams,
-          `Invalid doc_type. Must be one of: readme, changelog, contributing, license, codeofconduct`
+          "Invalid doc_type. Must be one of: readme, changelog, contributing, license, codeofconduct"
         );
       }
 
-      // Call SourceDocs API
       const response = await fetch(API_BASE + "/generate", {
         method: "POST",
         headers: {
@@ -113,10 +109,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        const errorData = await response.json() as { error?: string };
         throw new McpError(
           ErrorCode.InternalError,
-          `API error (${response.status}): ${error.error || 'Unknown error'}`
+          `API error (${response.status}): ${errorData.error || 'Unknown error'}`
         );
       }
 
@@ -135,7 +131,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (name === "generate_comments") {
       const { file_url } = args as { file_url: string };
 
-      // Validate input
       if (!file_url || !file_url.includes("github.com/") || !file_url.includes("/blob/")) {
         throw new McpError(
           ErrorCode.InvalidParams,
@@ -143,7 +138,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         );
       }
 
-      // Call SourceDocs API
       const response = await fetch(API_BASE + "/generate", {
         method: "POST",
         headers: {
@@ -154,15 +148,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        const errorData = await response.json() as { error?: string };
         throw new McpError(
           ErrorCode.InternalError,
-          `API error (${response.status}): ${error.error || 'Unknown error'}`
+          `API error (${response.status}): ${errorData.error || 'Unknown error'}`
         );
       }
 
-      const data = await response.json() as { 
-        content: string; 
+      const data = await response.json() as {
+        content: string;
         file: { name: string; path: string; repo: string };
       };
 
@@ -219,7 +213,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Start server
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);

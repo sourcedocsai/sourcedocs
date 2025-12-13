@@ -11,7 +11,6 @@ if (!API_KEY) {
     console.error("Get your API key at https://www.sourcedocs.ai/settings");
     process.exit(1);
 }
-const DOC_TYPES = ["readme", "changelog", "contributing", "license", "codeofconduct"];
 // Create server
 const server = new index_js_1.Server({
     name: "sourcedocs-mcp",
@@ -37,11 +36,25 @@ server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => {
                         },
                         doc_type: {
                             type: "string",
-                            enum: DOC_TYPES,
+                            enum: ["readme", "changelog", "contributing", "license", "codeofconduct"],
                             description: "Type of documentation to generate",
                         },
                     },
                     required: ["repo_url", "doc_type"],
+                },
+            },
+            {
+                name: "generate_comments",
+                description: "Add documentation comments to a source code file from GitHub. Supports JSDoc, TSDoc, docstrings, GoDoc, Javadoc, and 20+ languages.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        file_url: {
+                            type: "string",
+                            description: "GitHub file URL (e.g., https://github.com/owner/repo/blob/main/src/file.ts)",
+                        },
+                    },
+                    required: ["file_url"],
                 },
             },
             {
@@ -62,14 +75,12 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
     try {
         if (name === "generate_docs") {
             const { repo_url, doc_type } = args;
-            // Validate inputs
             if (!repo_url || !repo_url.includes("github.com")) {
                 throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidParams, "Invalid GitHub URL");
             }
-            if (!DOC_TYPES.includes(doc_type)) {
-                throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidParams, `Invalid doc_type. Must be one of: ${DOC_TYPES.join(", ")}`);
+            if (!["readme", "changelog", "contributing", "license", "codeofconduct"].includes(doc_type)) {
+                throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidParams, "Invalid doc_type. Must be one of: readme, changelog, contributing, license, codeofconduct");
             }
-            // Call SourceDocs API
             const response = await fetch(API_BASE + "/generate", {
                 method: "POST",
                 headers: {
@@ -79,15 +90,42 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
                 body: JSON.stringify({ repo_url, doc_type }),
             });
             if (!response.ok) {
-                const error = await response.text();
-                throw new types_js_1.McpError(types_js_1.ErrorCode.InternalError, `API error (${response.status}): ${error}`);
+                const errorData = await response.json();
+                throw new types_js_1.McpError(types_js_1.ErrorCode.InternalError, `API error (${response.status}): ${errorData.error || 'Unknown error'}`);
             }
-            const content = await response.text();
+            const data = await response.json();
             return {
                 content: [
                     {
                         type: "text",
-                        text: content,
+                        text: data.content,
+                    },
+                ],
+            };
+        }
+        if (name === "generate_comments") {
+            const { file_url } = args;
+            if (!file_url || !file_url.includes("github.com/") || !file_url.includes("/blob/")) {
+                throw new types_js_1.McpError(types_js_1.ErrorCode.InvalidParams, "Invalid GitHub file URL. Expected format: https://github.com/owner/repo/blob/branch/path/to/file.ext");
+            }
+            const response = await fetch(API_BASE + "/generate", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${API_KEY}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ file_url, doc_type: "comments" }),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new types_js_1.McpError(types_js_1.ErrorCode.InternalError, `API error (${response.status}): ${errorData.error || 'Unknown error'}`);
+            }
+            const data = await response.json();
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `// File: ${data.file.name}\n// Path: ${data.file.path}\n// Repo: ${data.file.repo}\n\n${data.content}`,
                     },
                 ],
             };
@@ -120,7 +158,6 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
         throw new types_js_1.McpError(types_js_1.ErrorCode.InternalError, error instanceof Error ? error.message : "Unknown error");
     }
 });
-// Start server
 async function main() {
     const transport = new stdio_js_1.StdioServerTransport();
     await server.connect(transport);

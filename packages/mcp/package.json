@@ -1,8 +1,9 @@
 {
   "name": "sourcedocs-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for SourceDocs.ai - Generate documentation for GitHub repos",
   "main": "dist/index.js",
+  "private": false,
   "bin": {
     "sourcedocs-mcp": "./dist/index.js"
   },
@@ -11,12 +12,20 @@
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts"
   },
+  "files": [
+    "dist"
+  ],
   "keywords": [
     "mcp",
     "sourcedocs",
     "documentation",
     "readme",
     "changelog",
+    "license",
+    "contributing",
+    "comments",
+    "code of conduct",
+    "ai",
     "github",
     "claude",
     "cursor",
