@@ -78,6 +78,7 @@ function HomeContent() {
   const [showSurvey, setShowSurvey] = useState(false);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [isPro, setIsPro] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [fileInfo, setFileInfo] = useState<{ name: string; path: string } | null>(null);
 
   // Fetch user status on load and after upgrade
@@ -94,6 +95,7 @@ function HomeContent() {
         const data = await res.json();
         setUsage({ used: data.web?.usage || 0, limit: data.web?.limit || 1 });
         setIsPro(data.isPro);
+        setIsAdmin(data.isAdmin);
         setSurveyCompleted(data.surveyCompleted);
       }
     } catch (err) {
@@ -207,13 +209,35 @@ function HomeContent() {
               <span className="text-zinc-400 text-sm">Payment canceled</span>
             )}
             {session ? (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                {/* Badges */}
+                {isAdmin && (
+                  
+                    href="/admin"
+                    className="text-xs text-red-400 font-medium px-2 py-0.5 bg-red-400/10 rounded hover:bg-red-400/20 transition-colors"
+                  >
+                    Admin
+                  </a>
+                )}
+                {isPro && (
+                  <span className="text-xs text-green-400 font-medium px-2 py-0.5 bg-green-400/10 rounded">
+                    Pro
+                  </span>
+                )}
+                
+                {/* Usage */}
                 {usage && (
                   <span className="text-sm text-zinc-500">
                     {isPro ? '∞' : `${usage.used}/${usage.limit}`} used
                   </span>
                 )}
-                <a
+                
+                {/* Username */}
+                <span className="text-sm text-zinc-400">
+                  {session.user?.name || (session.user as any)?.username}
+                </span>
+                
+                
                   href="/settings"
                   className="text-sm text-zinc-400 hover:text-zinc-200"
                 >
@@ -261,7 +285,7 @@ function HomeContent() {
               }}
               className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                 docType === type
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-white text-zinc-900'
                   : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
               }`}
             >
@@ -283,35 +307,34 @@ function HomeContent() {
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
             placeholder={docConfig[docType].placeholder}
-            className="flex-1 px-4 py-3 bg-zinc-900 border border-zinc-700 rounded-lg focus:outline-none focus:border-green-500 placeholder-zinc-600"
+            className="flex-1 px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-600"
           />
           <button
             onClick={handleGenerate}
             disabled={loading || !url.trim()}
-            className="px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-6 py-3 bg-white text-zinc-900 font-medium rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Generating...' : 'Generate'}
           </button>
         </div>
 
-        {/* Helper text for file URLs */}
-        {isFileType && (
-          <p className="text-xs text-zinc-500 mt-2">
-            Paste a link to a specific file (must include /blob/ in the URL)
-          </p>
-        )}
-
         {/* Error */}
         {error && (
-          <div className="mt-4">
-            <p className="text-red-400 text-sm">{error}</p>
-            {error.includes('Upgrade') && (
-              <a
-                href="/settings"
-                className="inline-block mt-2 text-sm text-green-400 hover:underline"
+          <div className="mt-4 text-red-400 text-sm">
+            {error}
+            {error.includes('limit') && !isPro && (
+              <button
+                onClick={() => {
+                  fetch('/api/checkout', { method: 'POST' })
+                    .then((res) => res.json())
+                    .then((data) => {
+                      if (data.url) window.location.href = data.url;
+                    });
+                }}
+                className="ml-2 underline hover:text-red-300"
               >
-                Upgrade to Pro →
-              </a>
+                Upgrade to Pro
+              </button>
             )}
           </div>
         )}
@@ -319,30 +342,23 @@ function HomeContent() {
 
       {/* Output Section */}
       {output && (
-        <section className="max-w-4xl mx-auto px-6 pb-20">
+        <section className="max-w-4xl mx-auto px-6 pb-16">
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
             {/* Output Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 bg-zinc-800/50">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-zinc-200">
-                  {docType === 'comments' && fileInfo 
-                    ? fileInfo.name 
-                    : `Generated ${docConfig[docType].label}`}
-                </span>
-                {docType === 'comments' && fileInfo && (
-                  <span className="text-xs text-zinc-500">{fileInfo.path}</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
+              <span className="text-sm text-zinc-400">
+                {fileInfo ? `${fileInfo.name} (${fileInfo.path})` : docConfig[docType].label}
+              </span>
+              <div className="flex gap-2">
                 <button
                   onClick={handleCopy}
-                  className="px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 rounded transition-colors"
+                  className="px-3 py-1 text-sm bg-zinc-800 hover:bg-zinc-700 rounded transition-colors"
                 >
-                  {copied ? '✓ Copied!' : 'Copy'}
+                  {copied ? 'Copied!' : 'Copy'}
                 </button>
                 <button
                   onClick={handleDownload}
-                  className="px-3 py-1.5 text-sm bg-zinc-700 hover:bg-zinc-600 rounded transition-colors"
+                  className="px-3 py-1 text-sm bg-zinc-800 hover:bg-zinc-700 rounded transition-colors"
                 >
                   Download
                 </button>
@@ -350,13 +366,13 @@ function HomeContent() {
             </div>
 
             {/* Output Content */}
-            <div className="p-6 overflow-x-auto">
+            <div className="p-6 max-h-[600px] overflow-y-auto">
               {docType === 'comments' ? (
-                // Code output (no markdown rendering)
-                <pre className="text-sm text-zinc-300 font-mono whitespace-pre">{output}</pre>
+                <pre className="text-sm text-zinc-300 whitespace-pre-wrap font-mono">
+                  {output}
+                </pre>
               ) : (
-                // Markdown output
-                <div className="prose prose-invert prose-zinc max-w-none">
+                <div className="readme-preview prose prose-invert max-w-none">
                   <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
                     {output}
                   </ReactMarkdown>
@@ -380,13 +396,11 @@ function HomeContent() {
 
 export default function Home() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
-          <p className="text-zinc-400">Loading...</p>
-        </div>
-      }
-    >
+    <Suspense fallback={
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
+        <p className="text-zinc-400">Loading...</p>
+      </div>
+    }>
       <HomeContent />
     </Suspense>
   );
