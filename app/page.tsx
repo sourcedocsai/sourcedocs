@@ -81,7 +81,6 @@ function HomeContent() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [fileInfo, setFileInfo] = useState<{ name: string; path: string } | null>(null);
 
-  // Fetch user status on load and after upgrade
   useEffect(() => {
     if (session) {
       fetchUserStatus();
@@ -137,24 +136,19 @@ function HomeContent() {
         return;
       }
 
-      // Handle different response keys
       const content = data[config.key] || data.content || data.documentedCode;
       setOutput(content);
 
-      // Update usage
       if (data.usage !== undefined && data.limit !== undefined) {
         setUsage({ used: data.usage, limit: data.limit });
       }
 
-      // Set file info for comments
       if (docType === 'comments' && data.filename) {
         setFileInfo({ name: data.filename, path: data.path });
       }
 
-      // Track generation
       track('generate', { docType });
 
-      // Show survey after first generation if not completed
       if (!surveyCompleted && !isPro) {
         setShowSurvey(true);
       }
@@ -178,12 +172,12 @@ function HomeContent() {
     
     const blob = new Blob([output], { type: 'text/plain' });
     const downloadUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const anchor = document.createElement('a');
+    anchor.href = downloadUrl;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
     window.URL.revokeObjectURL(downloadUrl);
   };
 
@@ -192,68 +186,51 @@ function HomeContent() {
     setShowSurvey(false);
   };
 
-  // Check if current doc type is for files (comments) vs repos
   const isFileType = docType === 'comments';
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
-    {/* Header */}
-    <header className="border-b border-zinc-800 px-6 py-4">
-      <div className="max-w-5xl mx-auto flex items-center justify-between">
-        <h1 className="text-xl font-semibold">SourceDocs.ai</h1>
-        <div className="flex items-center gap-4">
-          {upgraded && (
-            <span className="text-green-400 text-sm">✓ Upgraded to Pro!</span>
-          )}
-          {canceled && (
-            <span className="text-zinc-400 text-sm">Payment canceled</span>
-          )}
-          {session ? (
-            <div className="flex items-center gap-3">
-              {isAdmin && (
-                
-                  <a href="/admin"
-                  className="text-xs text-red-400 font-medium px-2 py-0.5 bg-red-400/10 rounded hover:bg-red-400/20 transition-colors">
-                  Admin
+      <header className="border-b border-zinc-800 px-6 py-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <h1 className="text-xl font-semibold">SourceDocs.ai</h1>
+          <div className="flex items-center gap-4">
+            {upgraded && (
+              <span className="text-green-400 text-sm">✓ Upgraded to Pro!</span>
+            )}
+            {canceled && (
+              <span className="text-zinc-400 text-sm">Payment canceled</span>
+            )}
+            {session ? (
+              <div className="flex items-center gap-3">
+                {isAdmin && (
+                  <a href="/admin" className="text-xs text-red-400 font-medium px-2 py-0.5 bg-red-400/10 rounded hover:bg-red-400/20 transition-colors">
+                    Admin
+                  </a>
+                )}
+                <a href="/settings" className={`text-xs font-medium px-2 py-0.5 rounded transition-colors ${isPro ? 'text-green-400 bg-green-400/10 hover:bg-green-400/20' : 'text-zinc-400 bg-zinc-800 hover:bg-zinc-700'}`}>
+                  {isPro ? 'Pro' : 'Free'}
                 </a>
-              )}
-              {isPro && (
-                <span className="text-xs text-green-400 font-medium px-2 py-0.5 bg-green-400/10 rounded">
-                  Pro
+                {usage && (
+                  <span className="text-sm text-zinc-500">
+                    {isPro ? '∞' : `${usage.used}/${usage.limit}`} used
+                  </span>
+                )}
+                <span className="text-sm text-zinc-400">
+                  {session.user?.name || (session.user as any)?.username}
                 </span>
-              )}
-              {usage && (
-                <span className="text-sm text-zinc-500">
-                  {isPro ? '∞' : `${usage.used}/${usage.limit}`} used
-                </span>
-              )}
-              <span className="text-sm text-zinc-400">
-                {session.user?.name || (session.user as any)?.username}
-              </span>
-              
-              <a  href="/settings"
-                className="text-sm text-zinc-400 hover:text-zinc-200">
-                Settings
-              </a>
-              <button
-                onClick={() => signOut()}
-                className="text-sm text-zinc-500 hover:text-zinc-300"
-              >
-                Sign out
+                <button onClick={() => signOut()} className="text-sm text-zinc-500 hover:text-zinc-300">
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => signIn('github')} className="px-4 py-2 bg-white text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-200 transition-colors">
+                Sign in with GitHub
               </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => signIn('github')}
-          className="px-4 py-2 bg-white text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-200 transition-colors">
-              Sign in with GitHub
-            </button>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
 
-      {/* Hero Section */}
       <section className="max-w-4xl mx-auto px-6 py-16 text-center">
         <h2 className="text-4xl font-bold mb-4">
           Documentation in seconds, not hours
@@ -262,7 +239,6 @@ function HomeContent() {
           Paste a GitHub URL. Get professional docs. That's it.
         </p>
 
-        {/* Document Type Selector */}
         <div className="flex flex-wrap justify-center gap-2 mb-4">
           {(Object.keys(docConfig) as DocType[]).map((type) => (
             <button
@@ -285,12 +261,10 @@ function HomeContent() {
           ))}
         </div>
 
-        {/* Description */}
         <p className="text-zinc-500 text-sm mb-6">
           {docConfig[docType].description}
         </p>
 
-        {/* Input */}
         <div className="flex gap-3 max-w-2xl mx-auto">
           <input
             type="text"
@@ -309,7 +283,6 @@ function HomeContent() {
           </button>
         </div>
 
-        {/* Error */}
         {error && (
           <div className="mt-4 text-red-400 text-sm">
             {error}
@@ -331,11 +304,9 @@ function HomeContent() {
         )}
       </section>
 
-      {/* Output Section */}
       {output && (
         <section className="max-w-4xl mx-auto px-6 pb-16">
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-            {/* Output Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
               <span className="text-sm text-zinc-400">
                 {fileInfo ? `${fileInfo.name} (${fileInfo.path})` : docConfig[docType].label}
@@ -356,7 +327,6 @@ function HomeContent() {
               </div>
             </div>
 
-            {/* Output Content */}
             <div className="p-6 max-h-[600px] overflow-y-auto">
               {docType === 'comments' ? (
                 <pre className="text-sm text-zinc-300 whitespace-pre-wrap font-mono">
@@ -374,7 +344,6 @@ function HomeContent() {
         </section>
       )}
 
-      {/* Survey Modal */}
       {showSurvey && (
         <SurveyModal
           onComplete={handleSurveyComplete}
