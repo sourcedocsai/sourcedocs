@@ -39,8 +39,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: "generate_docs",
-        description:
-          "Generate documentation for a GitHub repository. Supports README, CHANGELOG, CONTRIBUTING, LICENSE, and CODE_OF_CONDUCT.",
+        description: "Generate documentation for a GitHub repository. Supports README, CHANGELOG, CONTRIBUTING, LICENSE, and CODE_OF_CONDUCT.",
         inputSchema: {
           type: "object",
           properties: {
@@ -59,8 +58,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: "generate_comments",
-        description:
-          "Add documentation comments to a source code file from GitHub. Supports JSDoc, TSDoc, docstrings, GoDoc, Javadoc, and more.",
+        description: "Add documentation comments to a source code file from GitHub. Supports JSDoc, TSDoc, docstrings, GoDoc, Javadoc, and 20+ languages.",
         inputSchema: {
           type: "object",
           properties: {
@@ -97,7 +95,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (!repo_url || !repo_url.includes("github.com")) {
         throw new McpError(ErrorCode.InvalidParams, "Invalid GitHub URL");
       }
-
       if (!["readme", "changelog", "contributing", "license", "codeofconduct"].includes(doc_type)) {
         throw new McpError(
           ErrorCode.InvalidParams,
@@ -116,14 +113,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       });
 
       if (!response.ok) {
-        const error = await response.text();
+        const error = await response.json();
         throw new McpError(
           ErrorCode.InternalError,
-          `API error (${response.status}): ${error}`
+          `API error (${response.status}): ${error.error || 'Unknown error'}`
         );
       }
 
-      const data = await response.json() as { content: string; repo: string };
+      const data = await response.json() as { content: string; repo: string; doc_type: string };
 
       return {
         content: [
@@ -139,10 +136,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { file_url } = args as { file_url: string };
 
       // Validate input
-      if (!file_url || !file_url.includes("github.com") || !file_url.includes("/blob/")) {
+      if (!file_url || !file_url.includes("github.com/") || !file_url.includes("/blob/")) {
         throw new McpError(
           ErrorCode.InvalidParams,
-          "Invalid GitHub file URL. Expected format: https://github.com/owner/repo/blob/branch/path/to/file"
+          "Invalid GitHub file URL. Expected format: https://github.com/owner/repo/blob/branch/path/to/file.ext"
         );
       }
 
@@ -157,20 +154,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       });
 
       if (!response.ok) {
-        const error = await response.text();
+        const error = await response.json();
         throw new McpError(
           ErrorCode.InternalError,
-          `API error (${response.status}): ${error}`
+          `API error (${response.status}): ${error.error || 'Unknown error'}`
         );
       }
 
-      const data = await response.json() as { content: string; file: { name: string; path: string } };
+      const data = await response.json() as { 
+        content: string; 
+        file: { name: string; path: string; repo: string };
+      };
 
       return {
         content: [
           {
             type: "text",
-            text: `# Documented: ${data.file?.name || 'file'}\n\n\`\`\`\n${data.content}\n\`\`\``,
+            text: `// File: ${data.file.name}\n// Path: ${data.file.path}\n// Repo: ${data.file.repo}\n\n${data.content}`,
           },
         ],
       };

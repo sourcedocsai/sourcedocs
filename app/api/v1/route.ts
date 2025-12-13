@@ -7,17 +7,18 @@ export async function GET() {
     documentation: 'https://www.sourcedocs.ai/docs',
     endpoints: {
       'POST /api/v1/generate': {
-        description: 'Generate documentation for a GitHub repository',
+        description: 'Generate documentation for a GitHub repository or add comments to a file',
         authentication: 'Bearer token (API key)',
         body: {
-          repo_url: 'https://github.com/owner/repo',
-          doc_type: 'readme | changelog | contributing | license | codeofconduct',
+          repo_url: 'https://github.com/owner/repo (required for readme, changelog, contributing, license, codeofconduct)',
+          file_url: 'https://github.com/owner/repo/blob/main/file.ts (required for comments)',
+          doc_type: 'readme | changelog | contributing | license | codeofconduct | comments',
         },
         response: {
           success: true,
           doc_type: 'readme',
           repo: 'repo-name',
-          content: '# Generated markdown...',
+          content: '# Generated markdown or documented code...',
           generation_time_ms: 1234,
         },
       },
@@ -35,11 +36,15 @@ export async function GET() {
         },
       },
     },
-    example: {
-      curl: `curl -X POST https://www.sourcedocs.ai/api/v1/generate \\
+    examples: {
+      generate_readme: `curl -X POST https://www.sourcedocs.ai/api/v1/generate \\
   -H "Authorization: Bearer sk_live_your_api_key" \\
   -H "Content-Type: application/json" \\
   -d '{"repo_url": "https://github.com/owner/repo", "doc_type": "readme"}'`,
+      generate_comments: `curl -X POST https://www.sourcedocs.ai/api/v1/generate \\
+  -H "Authorization: Bearer sk_live_your_api_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{"file_url": "https://github.com/owner/repo/blob/main/src/index.ts", "doc_type": "comments"}'`,
     },
   });
 }

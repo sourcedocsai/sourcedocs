@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiRequest } from '@/lib/api-auth';
 import { canGenerateApi, recordGeneration } from '@/lib/db';
+import { trackApiUsage } from '@/lib/api-auth';
 import { parseGitHubUrl, fetchRepoData, fetchCommits, fetchReleases, fetchTags } from '@/lib/github';
 import { generateReadme } from '@/lib/claude';
 import { generateChangelog } from '@/lib/changelog';
