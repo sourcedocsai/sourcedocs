@@ -117,12 +117,18 @@ export async function generateCodeComments(input: CommentGenerationInput): Promi
    - Add @param, @returns, @throws (or equivalent) tags where appropriate
    - Include brief usage examples for complex functions
 
-3. **Preserve:**
-   - All existing code exactly as-is
-   - Existing comments (but improve them if they're inadequate)
-   - Code formatting and indentation
+3. **Spacing and Formatting:**
+   - Add a blank line between each documented declaration (variable, function, class, etc.)
+   - Ensure each doc comment + its declaration is visually separated from the next
+   - Group related declarations together but still separate with blank lines
+   - This improves readability and makes the code easier to scan
 
-4. **Output:**
+4. **Preserve:**
+   - All existing code logic exactly as-is
+   - Existing comments (but improve them if they're inadequate)
+   - Original indentation style
+
+5. **Output:**
    - Return ONLY the complete file with added documentation
    - No explanations, no markdown code blocks, just the raw documented code
    - The output should be directly copy-pasteable into the file
