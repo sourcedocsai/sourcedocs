@@ -1,6 +1,6 @@
 import { NextAuthOptions } from 'next-auth';
 import GitHubProvider from 'next-auth/providers/github';
-import { getOrCreateUser } from './db';
+import { getOrCreateUser, updateUserGithubToken } from './db';
 
 interface GitHubProfile {
   id: number;
@@ -15,6 +15,12 @@ export const authOptions: NextAuthOptions = {
     GitHubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          // Request repo scope for PR creation
+          scope: 'read:user user:email repo',
+        },
+      },
     }),
   ],
   callbacks: {
@@ -31,10 +37,16 @@ export const authOptions: NextAuthOptions = {
           avatar_url: ghProfile.avatar_url,
         });
 
+        // Store the GitHub access token for API calls (PR creation)
+        if (account.access_token) {
+          await updateUserGithubToken(user.id, account.access_token);
+        }
+
         token.githubId = String(ghProfile.id);
         token.username = ghProfile.login;
-        token.userId = user.id; // Supabase user ID
+        token.userId = user.id;
         token.isPro = user.is_pro;
+        token.accessToken = account.access_token;
       }
       return token;
     },
@@ -44,6 +56,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).username = token.username;
         (session.user as any).userId = token.userId;
         (session.user as any).isPro = token.isPro;
+        // Don't expose access token to client - keep it server-side only
       }
       return session;
     },

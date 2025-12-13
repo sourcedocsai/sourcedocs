@@ -62,6 +62,13 @@ const docConfig: Record<DocType, {
   },
 };
 
+// Parse GitHub URL to extract owner and repo
+function parseRepoUrl(url: string): { owner: string; repo: string } | null {
+  const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+  if (!match) return null;
+  return { owner: match[1], repo: match[2].replace(/\.git$/, '') };
+}
+
 function HomeContent() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
@@ -80,6 +87,12 @@ function HomeContent() {
   const [isPro, setIsPro] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [fileInfo, setFileInfo] = useState<{ name: string; path: string } | null>(null);
+  
+  // PR-related state
+  const [showPRModal, setShowPRModal] = useState(false);
+  const [prLoading, setPrLoading] = useState(false);
+  const [prResult, setPrResult] = useState<{ url: string; number: number } | null>(null);
+  const [prError, setPrError] = useState('');
 
   useEffect(() => {
     if (session) {
@@ -113,6 +126,8 @@ function HomeContent() {
     setError('');
     setOutput('');
     setFileInfo(null);
+    setPrResult(null);
+    setPrError('');
 
     try {
       const config = docConfig[docType];
@@ -179,6 +194,55 @@ function HomeContent() {
     anchor.click();
     document.body.removeChild(anchor);
     window.URL.revokeObjectURL(downloadUrl);
+  };
+
+  const handleCreatePR = async () => {
+    // Don't allow PR creation for code comments (they go to specific files)
+    if (docType === 'comments') {
+      setPrError('PR creation is not yet supported for code comments. Use Copy or Download instead.');
+      return;
+    }
+
+    const parsed = parseRepoUrl(url);
+    if (!parsed) {
+      setPrError('Could not parse repository URL');
+      return;
+    }
+
+    setPrLoading(true);
+    setPrError('');
+    setPrResult(null);
+
+    try {
+      const res = await fetch('/api/pr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          owner: parsed.owner,
+          repo: parsed.repo,
+          content: output,
+          docType,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.requiresReauth) {
+          setPrError('Please sign out and sign back in to grant repository access permissions.');
+        } else {
+          setPrError(data.error || 'Failed to create PR');
+        }
+        return;
+      }
+
+      setPrResult({ url: data.pr.url, number: data.pr.number });
+      track('create_pr', { docType });
+    } catch (err) {
+      setPrError('Failed to create pull request');
+    } finally {
+      setPrLoading(false);
+    }
   };
 
   const handleSurveyComplete = () => {
@@ -249,6 +313,8 @@ function HomeContent() {
                 setOutput('');
                 setError('');
                 setFileInfo(null);
+                setPrResult(null);
+                setPrError('');
               }}
               className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                 docType === type
@@ -324,8 +390,40 @@ function HomeContent() {
                 >
                   Download
                 </button>
+                {docType !== 'comments' && (
+                  <button
+                    onClick={handleCreatePR}
+                    disabled={prLoading}
+                    className="px-3 py-1 text-sm bg-green-600 hover:bg-green-500 rounded transition-colors disabled:opacity-50"
+                  >
+                    {prLoading ? 'Creating...' : 'Create PR'}
+                  </button>
+                )}
               </div>
             </div>
+
+            {/* PR Result or Error */}
+            {(prResult || prError) && (
+              <div className={`px-4 py-3 border-b border-zinc-800 ${prResult ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
+                {prResult ? (
+                  <div className="flex items-center justify-between">
+                    <span className="text-green-400 text-sm">
+                      ✓ Pull Request #{prResult.number} created successfully!
+                    </span>
+                    
+                      href={prResult.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-green-400 hover:text-green-300 underline"
+                    >
+                      View PR →
+                    </a>
+                  </div>
+                ) : (
+                  <span className="text-red-400 text-sm">{prError}</span>
+                )}
+              </div>
+            )}
 
             <div className="p-6 max-h-[600px] overflow-y-auto">
               {docType === 'comments' ? (

@@ -321,3 +321,26 @@ function generateRandomString(length: number): string {
 export async function trackApiUsage(userId: string): Promise<void> {
   await incrementApiUsage(userId);
 }
+
+// Update user's GitHub access token (for PR creation)
+export async function updateUserGithubToken(userId: string, token: string): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({ github_access_token: token })
+    .eq('id', userId);
+
+  if (error) {
+    console.error('Failed to update GitHub token:', error);
+  }
+}
+
+// Get user's GitHub access token
+export async function getUserGithubToken(userId: string): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from('users')
+    .select('github_access_token')
+    .eq('id', userId)
+    .single();
+
+  return data?.github_access_token || null;
+}
