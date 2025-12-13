@@ -17,7 +17,7 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
       authorization: {
         params: {
-          // Request repo scope for PR creation
+          // Request repo scope for PR creation functionality
           scope: 'read:user user:email repo',
         },
       },
@@ -27,7 +27,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, profile }) {
       if (account && profile) {
         const ghProfile = profile as GitHubProfile;
-        
+
         // Save/get user from database
         const user = await getOrCreateUser({
           id: String(ghProfile.id),
@@ -46,7 +46,6 @@ export const authOptions: NextAuthOptions = {
         token.username = ghProfile.login;
         token.userId = user.id;
         token.isPro = user.is_pro;
-        token.accessToken = account.access_token;
       }
       return token;
     },
@@ -56,7 +55,6 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).username = token.username;
         (session.user as any).userId = token.userId;
         (session.user as any).isPro = token.isPro;
-        // Don't expose access token to client - keep it server-side only
       }
       return session;
     },

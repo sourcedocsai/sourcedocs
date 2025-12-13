@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getUserByGithubId, getUserGithubToken } from '@/lib/db';
 
-// Document type to filename mapping
+// Document type to filename mapping (for non-comments types)
 const DOC_TYPE_FILES: Record<string, string> = {
   readme: 'README.md',
   changelog: 'CHANGELOG.md',
@@ -12,222 +12,78 @@ const DOC_TYPE_FILES: Record<string, string> = {
   codeofconduct: 'CODE_OF_CONDUCT.md',
 };
 
+// Documentation style labels for PR descriptions
+const DOC_STYLE_BY_EXT: Record<string, string> = {
+  js: 'JSDoc',
+  jsx: 'JSDoc',
+  ts: 'TSDoc',
+  tsx: 'TSDoc',
+  py: 'Google-style docstrings',
+  go: 'GoDoc',
+  rs: 'rustdoc',
+  java: 'Javadoc',
+  kt: 'KDoc',
+  rb: 'YARD',
+  php: 'PHPDoc',
+  swift: 'Swift documentation',
+  cs: 'XML documentation',
+  c: 'Doxygen',
+  cpp: 'Doxygen',
+  h: 'Doxygen',
+};
+
 interface GitHubApiError {
   message: string;
   documentation_url?: string;
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    // Authenticate user
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    const githubId = (session.user as any).githubId;
-    const user = await getUserByGithubId(githubId);
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Get the stored GitHub access token
-    const accessToken = await getUserGithubToken(user.id);
-    if (!accessToken) {
-      return NextResponse.json(
-        { 
-          error: 'GitHub authorization required',
-          requiresReauth: true,
-          message: 'Please sign out and sign back in to grant repository access permissions.'
-        },
-        { status: 403 }
-      );
-    }
-
-    // Parse request body
-    const body = await request.json();
-    const { owner, repo, content, docType, filePath } = body;
-
-    if (!owner || !repo || !content || !docType) {
-      return NextResponse.json(
-        { error: 'Missing required fields: owner, repo, content, docType' },
-        { status: 400 }
-      );
-    }
-
-    // Determine the filename
-    const filename = filePath || DOC_TYPE_FILES[docType];
-    if (!filename) {
-      return NextResponse.json({ error: 'Invalid document type' }, { status: 400 });
-    }
-
-    // GitHub API headers
-    const headers = {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'SourceDocs',
-    };
-
-    // Step 1: Get the default branch
-    const repoResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}`,
-      { headers }
-    );
-
-    if (!repoResponse.ok) {
-      const error = await repoResponse.json() as GitHubApiError;
-      if (repoResponse.status === 404) {
-        return NextResponse.json(
-          { error: 'Repository not found or you do not have access' },
-          { status: 404 }
-        );
-      }
-      return NextResponse.json(
-        { error: `GitHub API error: ${error.message}` },
-        { status: repoResponse.status }
-      );
-    }
-
-    const repoData = await repoResponse.json() as { default_branch: string };
-    const defaultBranch = repoData.default_branch;
-
-    // Step 2: Get the latest commit SHA from the default branch
-    const refResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${defaultBranch}`,
-      { headers }
-    );
-
-    if (!refResponse.ok) {
-      const error = await refResponse.json() as GitHubApiError;
-      return NextResponse.json(
-        { error: `Failed to get branch reference: ${error.message}` },
-        { status: refResponse.status }
-      );
-    }
-
-    const refData = await refResponse.json() as { object: { sha: string } };
-    const baseSha = refData.object.sha;
-
-    // Step 3: Create a new branch
-    const branchName = `sourcedocs/update-${docType}-${Date.now()}`;
-    
-    const createBranchResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/git/refs`,
-      {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ref: `refs/heads/${branchName}`,
-          sha: baseSha,
-        }),
-      }
-    );
-
-    if (!createBranchResponse.ok) {
-      const error = await createBranchResponse.json() as GitHubApiError;
-      return NextResponse.json(
-        { error: `Failed to create branch: ${error.message}` },
-        { status: createBranchResponse.status }
-      );
-    }
-
-    // Step 4: Check if the file already exists (to get its SHA for updates)
-    let existingFileSha: string | undefined;
-    const fileCheckResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${filename}?ref=${branchName}`,
-      { headers }
-    );
-
-    if (fileCheckResponse.ok) {
-      const fileData = await fileCheckResponse.json() as { sha: string };
-      existingFileSha = fileData.sha;
-    }
-
-    // Step 5: Create or update the file in the new branch
-    const commitMessage = existingFileSha
-      ? `docs: update ${filename} via SourceDocs.ai`
-      : `docs: add ${filename} via SourceDocs.ai`;
-
-    const createFileResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${filename}`,
-      {
-        method: 'PUT',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: commitMessage,
-          content: Buffer.from(content).toString('base64'),
-          branch: branchName,
-          ...(existingFileSha && { sha: existingFileSha }),
-        }),
-      }
-    );
-
-    if (!createFileResponse.ok) {
-      const error = await createFileResponse.json() as GitHubApiError;
-      return NextResponse.json(
-        { error: `Failed to create file: ${error.message}` },
-        { status: createFileResponse.status }
-      );
-    }
-
-    // Step 6: Create the Pull Request
-    const prTitle = existingFileSha
-      ? `docs: Update ${filename}`
-      : `docs: Add ${filename}`;
-
-    const prBody = generatePRDescription(docType, filename, existingFileSha !== undefined);
-
-    const createPRResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/pulls`,
-      {
-        method: 'POST',
-        headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: prTitle,
-          body: prBody,
-          head: branchName,
-          base: defaultBranch,
-        }),
-      }
-    );
-
-    if (!createPRResponse.ok) {
-      const error = await createPRResponse.json() as GitHubApiError;
-      return NextResponse.json(
-        { error: `Failed to create pull request: ${error.message}` },
-        { status: createPRResponse.status }
-      );
-    }
-
-    const prData = await createPRResponse.json() as { 
-      html_url: string; 
-      number: number;
-      title: string;
-    };
-
-    return NextResponse.json({
-      success: true,
-      pr: {
-        url: prData.html_url,
-        number: prData.number,
-        title: prData.title,
-        branch: branchName,
-        baseBranch: defaultBranch,
-      },
-    });
-
-  } catch (error) {
-    console.error('PR creation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create pull request' },
-      { status: 500 }
-    );
-  }
+/**
+ * Get the documentation style name based on file extension
+ */
+function getDocStyleForFile(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  return DOC_STYLE_BY_EXT[ext] || 'language-native documentation';
 }
 
-// Generate a detailed PR description
-function generatePRDescription(docType: string, filename: string, isUpdate: boolean): string {
+/**
+ * Generate a detailed PR description based on document type
+ */
+function generatePRDescription(
+  docType: string,
+  filename: string,
+  isUpdate: boolean
+): string {
+  // Special handling for code comments
+  if (docType === 'comments') {
+    const docStyle = getDocStyleForFile(filename);
+    return `## Added Documentation Comments
+
+This pull request was automatically generated by [SourceDocs.ai](https://www.sourcedocs.ai).
+
+### What's Changed
+
+- ${isUpdate ? 'Updated' : 'Added'} comprehensive documentation comments to \`${filename}\`
+- Comments follow **${docStyle}** conventions
+
+### Documentation Includes
+
+- Function and method descriptions
+- Parameter documentation with types
+- Return value documentation
+- Error/exception documentation where applicable
+- Usage examples for complex functions
+
+### About SourceDocs.ai
+
+[SourceDocs.ai](https://www.sourcedocs.ai) uses AI to analyze your code and generate professional documentation comments in the native format for your language. Supports 20+ programming languages including JavaScript, TypeScript, Python, Go, Rust, Java, and more.
+
+---
+
+<sub>Generated by [SourceDocs.ai](https://www.sourcedocs.ai) • AI-powered documentation for developers</sub>
+`;
+  }
+
+  // Standard document types (README, CHANGELOG, etc.)
   const action = isUpdate ? 'Updated' : 'Added';
   const docTypeLabels: Record<string, string> = {
     readme: 'README',
@@ -235,7 +91,6 @@ function generatePRDescription(docType: string, filename: string, isUpdate: bool
     contributing: 'Contributing Guidelines',
     license: 'License',
     codeofconduct: 'Code of Conduct',
-    comments: 'Code Comments',
   };
 
   const label = docTypeLabels[docType] || docType.toUpperCase();
@@ -263,4 +118,235 @@ ${isUpdate ? `- Updated \`${filename}\` with improved documentation` : `- Added 
 
 <sub>Generated by [SourceDocs.ai](https://www.sourcedocs.ai) • AI-powered documentation for developers</sub>
 `;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    // Step 1: Authenticate user
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const githubId = (session.user as any).githubId;
+    const user = await getUserByGithubId(githubId);
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Step 2: Get the stored GitHub access token
+    const accessToken = await getUserGithubToken(user.id);
+    if (!accessToken) {
+      return NextResponse.json(
+        {
+          error: 'GitHub authorization required',
+          requiresReauth: true,
+          message: 'Please sign out and sign back in to grant repository access permissions.',
+        },
+        { status: 403 }
+      );
+    }
+
+    // Step 3: Parse and validate request body
+    const body = await request.json();
+    const { owner, repo, content, docType, filePath, baseBranch } = body;
+
+    if (!owner || !repo || !content || !docType) {
+      return NextResponse.json(
+        { error: 'Missing required fields: owner, repo, content, docType' },
+        { status: 400 }
+      );
+    }
+
+    // Determine the target filename
+    let filename: string;
+    if (docType === 'comments') {
+      // For code comments, filePath is required and contains the full path
+      if (!filePath) {
+        return NextResponse.json(
+          { error: 'filePath is required for code comments' },
+          { status: 400 }
+        );
+      }
+      filename = filePath;
+    } else {
+      // For standard docs, use the predefined filename
+      filename = DOC_TYPE_FILES[docType];
+      if (!filename) {
+        return NextResponse.json({ error: 'Invalid document type' }, { status: 400 });
+      }
+    }
+
+    // GitHub API headers
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'SourceDocs',
+    };
+
+    // Step 4: Get repository info (including default branch)
+    const repoResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}`,
+      { headers }
+    );
+
+    if (!repoResponse.ok) {
+      const error = (await repoResponse.json()) as GitHubApiError;
+      if (repoResponse.status === 404) {
+        return NextResponse.json(
+          { error: 'Repository not found or you do not have access' },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json(
+        { error: `GitHub API error: ${error.message}` },
+        { status: repoResponse.status }
+      );
+    }
+
+    const repoData = (await repoResponse.json()) as { default_branch: string };
+    // Use provided baseBranch (for comments) or fall back to repo default
+    const targetBranch = baseBranch || repoData.default_branch;
+
+    // Step 5: Get the latest commit SHA from the target branch
+    const refResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/git/ref/heads/${targetBranch}`,
+      { headers }
+    );
+
+    if (!refResponse.ok) {
+      const error = (await refResponse.json()) as GitHubApiError;
+      return NextResponse.json(
+        { error: `Failed to get branch reference: ${error.message}` },
+        { status: refResponse.status }
+      );
+    }
+
+    const refData = (await refResponse.json()) as { object: { sha: string } };
+    const baseSha = refData.object.sha;
+
+    // Step 6: Create a new branch with descriptive name
+    const sanitizedFilename = filename.split('/').pop()?.replace(/[^a-zA-Z0-9.-]/g, '-') || 'file';
+    const branchName =
+      docType === 'comments'
+        ? `sourcedocs/document-${sanitizedFilename}-${Date.now()}`
+        : `sourcedocs/update-${docType}-${Date.now()}`;
+
+    const createBranchResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/git/refs`,
+      {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ref: `refs/heads/${branchName}`,
+          sha: baseSha,
+        }),
+      }
+    );
+
+    if (!createBranchResponse.ok) {
+      const error = (await createBranchResponse.json()) as GitHubApiError;
+      return NextResponse.json(
+        { error: `Failed to create branch: ${error.message}` },
+        { status: createBranchResponse.status }
+      );
+    }
+
+    // Step 7: Check if the file already exists (to get its SHA for updates)
+    let existingFileSha: string | undefined;
+    const fileCheckResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${filename}?ref=${branchName}`,
+      { headers }
+    );
+
+    if (fileCheckResponse.ok) {
+      const fileData = (await fileCheckResponse.json()) as { sha: string };
+      existingFileSha = fileData.sha;
+    }
+
+    // Step 8: Create or update the file in the new branch
+    const commitMessage =
+      docType === 'comments'
+        ? `docs: add documentation comments to ${filename}`
+        : existingFileSha
+          ? `docs: update ${filename} via SourceDocs.ai`
+          : `docs: add ${filename} via SourceDocs.ai`;
+
+    const createFileResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${filename}`,
+      {
+        method: 'PUT',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: commitMessage,
+          content: Buffer.from(content).toString('base64'),
+          branch: branchName,
+          ...(existingFileSha && { sha: existingFileSha }),
+        }),
+      }
+    );
+
+    if (!createFileResponse.ok) {
+      const error = (await createFileResponse.json()) as GitHubApiError;
+      return NextResponse.json(
+        { error: `Failed to create file: ${error.message}` },
+        { status: createFileResponse.status }
+      );
+    }
+
+    // Step 9: Create the Pull Request
+    const prTitle =
+      docType === 'comments'
+        ? `docs: Add documentation comments to ${filename.split('/').pop()}`
+        : existingFileSha
+          ? `docs: Update ${filename}`
+          : `docs: Add ${filename}`;
+
+    const prBody = generatePRDescription(docType, filename, existingFileSha !== undefined);
+
+    const createPRResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/pulls`,
+      {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: prTitle,
+          body: prBody,
+          head: branchName,
+          base: targetBranch,
+        }),
+      }
+    );
+
+    if (!createPRResponse.ok) {
+      const error = (await createPRResponse.json()) as GitHubApiError;
+      return NextResponse.json(
+        { error: `Failed to create pull request: ${error.message}` },
+        { status: createPRResponse.status }
+      );
+    }
+
+    const prData = (await createPRResponse.json()) as {
+      html_url: string;
+      number: number;
+      title: string;
+    };
+
+    // Return success with PR details
+    return NextResponse.json({
+      success: true,
+      pr: {
+        url: prData.html_url,
+        number: prData.number,
+        title: prData.title,
+        branch: branchName,
+        baseBranch: targetBranch,
+        file: filename,
+      },
+    });
+  } catch (error) {
+    console.error('PR creation error:', error);
+    return NextResponse.json({ error: 'Failed to create pull request' }, { status: 500 });
+  }
 }

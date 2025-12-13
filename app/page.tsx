@@ -11,44 +11,44 @@ import { SurveyModal } from '@/components/survey-modal';
 
 type DocType = 'readme' | 'changelog' | 'contributing' | 'license' | 'codeofconduct' | 'comments';
 
-const docConfig: Record<DocType, { 
-  endpoint: string; 
-  label: string; 
+const docConfig: Record<DocType, {
+  endpoint: string;
+  label: string;
   key: string;
   placeholder: string;
   description: string;
 }> = {
-  readme: { 
-    endpoint: '/api/readme', 
-    label: 'README', 
+  readme: {
+    endpoint: '/api/readme',
+    label: 'README',
     key: 'readme',
     placeholder: 'https://github.com/owner/repo',
     description: 'Generate a professional README with badges, installation, and usage docs',
   },
-  changelog: { 
-    endpoint: '/api/changelog', 
-    label: 'CHANGELOG', 
+  changelog: {
+    endpoint: '/api/changelog',
+    label: 'CHANGELOG',
     key: 'changelog',
     placeholder: 'https://github.com/owner/repo',
     description: 'Generate a changelog from commits, releases, and tags',
   },
-  contributing: { 
-    endpoint: '/api/contributing', 
-    label: 'CONTRIBUTING', 
+  contributing: {
+    endpoint: '/api/contributing',
+    label: 'CONTRIBUTING',
     key: 'contributing',
     placeholder: 'https://github.com/owner/repo',
     description: 'Generate contribution guidelines for your project',
   },
-  license: { 
-    endpoint: '/api/license', 
-    label: 'LICENSE', 
+  license: {
+    endpoint: '/api/license',
+    label: 'LICENSE',
     key: 'license',
     placeholder: 'https://github.com/owner/repo',
     description: 'Generate a properly formatted license file',
   },
-  codeofconduct: { 
-    endpoint: '/api/codeofconduct', 
-    label: 'CODE OF CONDUCT', 
+  codeofconduct: {
+    endpoint: '/api/codeofconduct',
+    label: 'CODE OF CONDUCT',
     key: 'codeofconduct',
     placeholder: 'https://github.com/owner/repo',
     description: 'Generate community standards and guidelines',
@@ -62,15 +62,45 @@ const docConfig: Record<DocType, {
   },
 };
 
-// Parse GitHub URL to extract owner and repo
 function parseRepoUrl(url: string): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
   if (!match) return null;
-  return { owner: match[1], repo: match[2].replace(/\.git$/, '') };
+  return {
+    owner: match[1],
+    repo: match[2].replace(/\.git$/, '').split('/')[0],
+  };
+}
+
+function parseFileUrl(url: string): { filePath: string; branch: string } | null {
+  const match = url.match(/github\.com\/[^\/]+\/[^\/]+\/blob\/([^\/]+)\/(.+)$/);
+  if (!match) return null;
+  return {
+    branch: match[1],
+    filePath: match[2],
+  };
+}
+
+function PrSuccessBanner({ prResult }: { prResult: { url: string; number: number; file: string } }) {
+  return (
+    <div className="px-4 py-3 border-b border-zinc-800 bg-green-900/20">
+      <div className="flex items-center justify-between">
+        <span className="text-green-400 text-sm">PR #{prResult.number} created for {prResult.file}</span>
+        <a href={prResult.url} target="_blank" rel="noopener noreferrer" className="text-sm text-green-400 hover:text-green-300 underline">View PR</a>
+      </div>
+    </div>
+  );
+}
+
+function PrErrorBanner({ message }: { message: string }) {
+  return (
+    <div className="px-4 py-3 border-b border-zinc-800 bg-red-900/20">
+      <span className="text-red-400 text-sm">{message}</span>
+    </div>
+  );
 }
 
 function HomeContent() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const upgraded = searchParams.get('upgraded');
   const canceled = searchParams.get('canceled');
@@ -87,11 +117,8 @@ function HomeContent() {
   const [isPro, setIsPro] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [fileInfo, setFileInfo] = useState<{ name: string; path: string } | null>(null);
-  
-  // PR-related state
-  const [showPRModal, setShowPRModal] = useState(false);
   const [prLoading, setPrLoading] = useState(false);
-  const [prResult, setPrResult] = useState<{ url: string; number: number } | null>(null);
+  const [prResult, setPrResult] = useState<{ url: string; number: number; file: string } | null>(null);
   const [prError, setPrError] = useState('');
 
   useEffect(() => {
@@ -141,7 +168,7 @@ function HomeContent() {
 
       if (!res.ok) {
         if (data.upgrade) {
-          setError(`Monthly limit reached (${data.usage}/${data.limit}). Upgrade for unlimited.`);
+          setError('Monthly limit reached (' + data.usage + '/' + data.limit + '). Upgrade for unlimited.');
           if (!surveyCompleted) {
             setShowSurvey(true);
           }
@@ -181,10 +208,10 @@ function HomeContent() {
   };
 
   const handleDownload = () => {
-    const filename = docType === 'comments' && fileInfo 
-      ? fileInfo.name 
-      : `${docConfig[docType].label.replace(/ /g, '_')}.md`;
-    
+    const filename = docType === 'comments' && fileInfo
+      ? fileInfo.name
+      : docConfig[docType].label.replace(/ /g, '_') + '.md';
+
     const blob = new Blob([output], { type: 'text/plain' });
     const downloadUrl = window.URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -197,12 +224,6 @@ function HomeContent() {
   };
 
   const handleCreatePR = async () => {
-    // Don't allow PR creation for code comments (they go to specific files)
-    if (docType === 'comments') {
-      setPrError('PR creation is not yet supported for code comments. Use Copy or Download instead.');
-      return;
-    }
-
     const parsed = parseRepoUrl(url);
     if (!parsed) {
       setPrError('Could not parse repository URL');
@@ -214,15 +235,35 @@ function HomeContent() {
     setPrResult(null);
 
     try {
+      const requestBody: {
+        owner: string;
+        repo: string;
+        content: string;
+        docType: string;
+        filePath?: string;
+        baseBranch?: string;
+      } = {
+        owner: parsed.owner,
+        repo: parsed.repo,
+        content: output,
+        docType,
+      };
+
+      if (docType === 'comments') {
+        const fileData = parseFileUrl(url);
+        if (!fileData) {
+          setPrError('Could not parse file path from URL');
+          setPrLoading(false);
+          return;
+        }
+        requestBody.filePath = fileData.filePath;
+        requestBody.baseBranch = fileData.branch;
+      }
+
       const res = await fetch('/api/pr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          owner: parsed.owner,
-          repo: parsed.repo,
-          content: output,
-          docType,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await res.json();
@@ -236,7 +277,11 @@ function HomeContent() {
         return;
       }
 
-      setPrResult({ url: data.pr.url, number: data.pr.number });
+      setPrResult({
+        url: data.pr.url,
+        number: data.pr.number,
+        file: data.pr.file,
+      });
       track('create_pr', { docType });
     } catch (err) {
       setPrError('Failed to create pull request');
@@ -250,7 +295,15 @@ function HomeContent() {
     setShowSurvey(false);
   };
 
-  const isFileType = docType === 'comments';
+  const handleDocTypeChange = (type: DocType) => {
+    setDocType(type);
+    setUrl('');
+    setOutput('');
+    setError('');
+    setFileInfo(null);
+    setPrResult(null);
+    setPrError('');
+  };
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -258,78 +311,40 @@ function HomeContent() {
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-semibold">SourceDocs.ai</h1>
           <div className="flex items-center gap-4">
-            {upgraded && (
-              <span className="text-green-400 text-sm">✓ Upgraded to Pro!</span>
-            )}
-            {canceled && (
-              <span className="text-zinc-400 text-sm">Payment canceled</span>
-            )}
+            {upgraded && <span className="text-green-400 text-sm">Upgraded to Pro!</span>}
+            {canceled && <span className="text-zinc-400 text-sm">Payment canceled</span>}
             {session ? (
               <div className="flex items-center gap-3">
-                {isAdmin && (
-                  <a href="/admin" className="text-xs text-red-400 font-medium px-2 py-0.5 bg-red-400/10 rounded hover:bg-red-400/20 transition-colors">
-                    Admin
-                  </a>
-                )}
-                <a href="/settings" className={`text-xs font-medium px-2 py-0.5 rounded transition-colors ${isPro ? 'text-green-400 bg-green-400/10 hover:bg-green-400/20' : 'text-zinc-400 bg-zinc-800 hover:bg-zinc-700'}`}>
-                  {isPro ? 'Pro' : 'Free'}
-                </a>
-                {usage && (
-                  <span className="text-sm text-zinc-500">
-                    {isPro ? '∞' : `${usage.used}/${usage.limit}`} used
-                  </span>
-                )}
-                <span className="text-sm text-zinc-400">
-                  {session.user?.name || (session.user as any)?.username}
-                </span>
-                <button onClick={() => signOut()} className="text-sm text-zinc-500 hover:text-zinc-300">
-                  Sign out
-                </button>
+                {isAdmin && <a href="/admin" className="text-xs text-red-400 font-medium px-2 py-0.5 bg-red-400/10 rounded hover:bg-red-400/20 transition-colors">Admin</a>}
+                <a href="/settings" className={'text-xs font-medium px-2 py-0.5 rounded transition-colors ' + (isPro ? 'text-green-400 bg-green-400/10 hover:bg-green-400/20' : 'text-zinc-400 bg-zinc-800 hover:bg-zinc-700')}>{isPro ? 'Pro' : 'Free'}</a>
+                {usage && <span className="text-sm text-zinc-500">{isPro ? 'Unlimited' : (usage.used + '/' + usage.limit)} used</span>}
+                <span className="text-sm text-zinc-400">{session.user?.name || (session.user as any)?.username}</span>
+                <button onClick={() => signOut()} className="text-sm text-zinc-500 hover:text-zinc-300">Sign out</button>
               </div>
             ) : (
-              <button onClick={() => signIn('github')} className="px-4 py-2 bg-white text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-200 transition-colors">
-                Sign in with GitHub
-              </button>
+              <button onClick={() => signIn('github')} className="px-4 py-2 bg-white text-zinc-900 text-sm font-medium rounded-lg hover:bg-zinc-200 transition-colors">Sign in with GitHub</button>
             )}
           </div>
         </div>
       </header>
 
       <section className="max-w-4xl mx-auto px-6 py-16 text-center">
-        <h2 className="text-4xl font-bold mb-4">
-          Documentation in seconds, not hours
-        </h2>
-        <p className="text-zinc-400 text-lg mb-10">
-          Paste a GitHub URL. Get professional docs. That's it.
-        </p>
+        <h2 className="text-4xl font-bold mb-4">Documentation in seconds, not hours</h2>
+        <p className="text-zinc-400 text-lg mb-10">Paste a GitHub URL. Get professional docs. That is it.</p>
 
         <div className="flex flex-wrap justify-center gap-2 mb-4">
           {(Object.keys(docConfig) as DocType[]).map((type) => (
             <button
               key={type}
-              onClick={() => {
-                setDocType(type);
-                setUrl('');
-                setOutput('');
-                setError('');
-                setFileInfo(null);
-                setPrResult(null);
-                setPrError('');
-              }}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                docType === type
-                  ? 'bg-white text-zinc-900'
-                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-              }`}
+              onClick={() => handleDocTypeChange(type)}
+              className={'px-4 py-2 rounded-lg font-medium text-sm transition-colors ' + (docType === type ? 'bg-white text-zinc-900' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700')}
             >
               {docConfig[type].label}
             </button>
           ))}
         </div>
 
-        <p className="text-zinc-500 text-sm mb-6">
-          {docConfig[docType].description}
-        </p>
+        <p className="text-zinc-500 text-sm mb-6">{docConfig[docType].description}</p>
 
         <div className="flex gap-3 max-w-2xl mx-auto">
           <input
@@ -374,67 +389,23 @@ function HomeContent() {
         <section className="max-w-4xl mx-auto px-6 pb-16">
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-              <span className="text-sm text-zinc-400">
-                {fileInfo ? `${fileInfo.name} (${fileInfo.path})` : docConfig[docType].label}
-              </span>
+              <span className="text-sm text-zinc-400">{fileInfo ? (fileInfo.name + ' (' + fileInfo.path + ')') : docConfig[docType].label}</span>
               <div className="flex gap-2">
-                <button
-                  onClick={handleCopy}
-                  className="px-3 py-1 text-sm bg-zinc-800 hover:bg-zinc-700 rounded transition-colors"
-                >
-                  {copied ? 'Copied!' : 'Copy'}
-                </button>
-                <button
-                  onClick={handleDownload}
-                  className="px-3 py-1 text-sm bg-zinc-800 hover:bg-zinc-700 rounded transition-colors"
-                >
-                  Download
-                </button>
-                {docType !== 'comments' && (
-                  <button
-                    onClick={handleCreatePR}
-                    disabled={prLoading}
-                    className="px-3 py-1 text-sm bg-green-600 hover:bg-green-500 rounded transition-colors disabled:opacity-50"
-                  >
-                    {prLoading ? 'Creating...' : 'Create PR'}
-                  </button>
-                )}
+                <button onClick={handleCopy} className="px-3 py-1 text-sm bg-zinc-800 hover:bg-zinc-700 rounded transition-colors">{copied ? 'Copied!' : 'Copy'}</button>
+                <button onClick={handleDownload} className="px-3 py-1 text-sm bg-zinc-800 hover:bg-zinc-700 rounded transition-colors">Download</button>
+                <button onClick={handleCreatePR} disabled={prLoading} className="px-3 py-1 text-sm bg-green-600 hover:bg-green-500 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{prLoading ? 'Creating...' : 'Create PR'}</button>
               </div>
             </div>
 
-            {/* PR Result or Error */}
-            {(prResult || prError) && (
-              <div className={`px-4 py-3 border-b border-zinc-800 ${prResult ? 'bg-green-900/20' : 'bg-red-900/20'}`}>
-                {prResult ? (
-                  <div className="flex items-center justify-between">
-                    <span className="text-green-400 text-sm">
-                      ✓ Pull Request #{prResult.number} created successfully!
-                    </span>
-                    
-                      href={prResult.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-green-400 hover:text-green-300 underline"
-                    >
-                      View PR →
-                    </a>
-                  </div>
-                ) : (
-                  <span className="text-red-400 text-sm">{prError}</span>
-                )}
-              </div>
-            )}
+            {prResult && <PrSuccessBanner prResult={prResult} />}
+            {prError && <PrErrorBanner message={prError} />}
 
             <div className="p-6 max-h-[600px] overflow-y-auto">
               {docType === 'comments' ? (
-                <pre className="text-sm text-zinc-300 whitespace-pre-wrap font-mono">
-                  {output}
-                </pre>
+                <pre className="text-sm text-zinc-300 whitespace-pre-wrap font-mono">{output}</pre>
               ) : (
                 <div className="readme-preview prose prose-invert max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                    {output}
-                  </ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{output}</ReactMarkdown>
                 </div>
               )}
             </div>
@@ -442,23 +413,14 @@ function HomeContent() {
         </section>
       )}
 
-      {showSurvey && (
-        <SurveyModal
-          onComplete={handleSurveyComplete}
-          onClose={() => setShowSurvey(false)}
-        />
-      )}
+      {showSurvey && <SurveyModal onComplete={handleSurveyComplete} onClose={() => setShowSurvey(false)} />}
     </main>
   );
 }
 
 export default function Home() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
-        <p className="text-zinc-400">Loading...</p>
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center"><p className="text-zinc-400">Loading...</p></div>}>
       <HomeContent />
     </Suspense>
   );
