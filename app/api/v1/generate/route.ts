@@ -1,56 +1,146 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateApiRequest, trackApiUsage } from '@/lib/api-auth';
+import { authenticateApiRequest } from '@/lib/api-auth';
+import { canGenerateApi, recordGeneration, trackApiUsage } from '@/lib/db';
 import { parseGitHubUrl, fetchRepoData, fetchCommits, fetchReleases, fetchTags } from '@/lib/github';
 import { generateReadme } from '@/lib/claude';
 import { generateChangelog } from '@/lib/changelog';
 import { generateContributing } from '@/lib/contributing';
 import { generateLicense } from '@/lib/license';
 import { generateCodeOfConduct } from '@/lib/codeofconduct';
-import { recordGeneration } from '@/lib/db';
+import { parseGitHubFileUrl, fetchGitHubFileContent, generateCodeComments } from '@/lib/comments';
 
-const VALID_DOC_TYPES = ['readme', 'changelog', 'contributing', 'license', 'codeofconduct'];
+const VALID_DOC_TYPES = ['readme', 'changelog', 'contributing', 'license', 'codeofconduct', 'comments'] as const;
+type DocType = typeof VALID_DOC_TYPES[number];
 
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate
+    // Authenticate via API key
     const auth = await authenticateApiRequest(request);
     if (!auth.success || !auth.user) {
       return NextResponse.json(
-        { error: auth.error },
-        { status: auth.status || 401 }
+        { error: auth.error || 'Authentication failed' },
+        { status: 401 }
       );
     }
 
-    const { repo_url, doc_type } = await request.json();
+    const body = await request.json();
+    const { doc_type, repo_url, file_url } = body;
 
-    // Validate inputs
-    if (!repo_url) {
-      return NextResponse.json(
-        { error: 'repo_url is required' },
-        { status: 400 }
-      );
-    }
-
+    // Validate doc_type
     if (!doc_type || !VALID_DOC_TYPES.includes(doc_type)) {
       return NextResponse.json(
-        { error: `doc_type must be one of: ${VALID_DOC_TYPES.join(', ')}` },
+        { 
+          error: 'Invalid doc_type',
+          valid_types: VALID_DOC_TYPES,
+        },
         { status: 400 }
       );
     }
 
-    const parsed = parseGitHubUrl(repo_url);
-    if (!parsed) {
+    // For comments, require file_url; for others, require repo_url
+    if (doc_type === 'comments') {
+      if (!file_url) {
+        return NextResponse.json(
+          { 
+            error: 'file_url is required for comments doc_type',
+            example: 'https://github.com/owner/repo/blob/main/src/file.ts'
+          },
+          { status: 400 }
+        );
+      }
+    } else {
+      if (!repo_url) {
+        return NextResponse.json(
+          { error: 'repo_url is required' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Check API usage limits
+    const { allowed, usage, limit } = await canGenerateApi(auth.user.id);
+    if (!allowed) {
       return NextResponse.json(
-        { error: 'Invalid GitHub URL' },
-        { status: 400 }
+        { 
+          error: 'API limit reached',
+          usage,
+          limit,
+          upgrade: 'https://www.sourcedocs.ai/settings'
+        },
+        { status: 429 }
       );
     }
 
     const startTime = Date.now();
     let content: string;
+    let responseData: Record<string, any> = {};
 
-    // Generate based on doc type
-    switch (doc_type) {
+    // Handle comments separately (uses file_url)
+    if (doc_type === 'comments') {
+      const parsed = parseGitHubFileUrl(file_url);
+      if (!parsed) {
+        return NextResponse.json(
+          { 
+            error: 'Invalid GitHub file URL',
+            expected: 'https://github.com/owner/repo/blob/branch/path/to/file.ext'
+          },
+          { status: 400 }
+        );
+      }
+
+      const fileContent = await fetchGitHubFileContent(
+        parsed.owner,
+        parsed.repo,
+        parsed.path,
+        parsed.branch
+      );
+
+      if (fileContent.length > 500000) {
+        return NextResponse.json(
+          { error: 'File too large. Maximum size is 500KB.' },
+          { status: 400 }
+        );
+      }
+
+      content = await generateCodeComments({
+        filename: parsed.path.split('/').pop() || parsed.path,
+        content: fileContent,
+        repoName: parsed.repo,
+        owner: parsed.owner,
+      });
+
+      responseData = {
+        file: {
+          name: parsed.path.split('/').pop(),
+          path: parsed.path,
+          repo: parsed.repo,
+          owner: parsed.owner,
+        },
+      };
+
+      const generationTimeMs = Date.now() - startTime;
+      await trackApiUsage(auth.user.id);
+      await recordGeneration(auth.user.id, 'comments', file_url, 'api', generationTimeMs);
+
+      return NextResponse.json({
+        success: true,
+        doc_type,
+        ...responseData,
+        content,
+        generation_time_ms: generationTimeMs,
+      });
+    }
+
+    // Handle repo-based doc types
+    const parsed = parseGitHubUrl(repo_url);
+    if (!parsed) {
+      return NextResponse.json(
+        { error: 'Invalid GitHub repository URL' },
+        { status: 400 }
+      );
+    }
+
+    switch (doc_type as DocType) {
       case 'readme': {
         const repoData = await fetchRepoData(parsed.owner, parsed.repo);
         content = await generateReadme(repoData);
@@ -102,27 +192,13 @@ export async function POST(request: NextRequest) {
     await trackApiUsage(auth.user.id);
     await recordGeneration(auth.user.id, doc_type, repo_url, 'api', generationTimeMs);
 
-    // Check if raw markdown requested
-    const { searchParams } = new URL(request.url);
-    const format = searchParams.get('format');
-
-    if (format === 'json') {
-      return NextResponse.json({
-        success: true,
-        doc_type,
-        repo: parsed.repo,
-        content,
-        generation_time_ms: generationTimeMs,
-      });
-    }
-
-    return new NextResponse(content, {
-      headers: {
-        'Content-Type': 'text/markdown; charset=utf-8',
-        'Content-Disposition': `attachment; filename="${doc_type.toUpperCase()}.md"`,
-      },
+    return NextResponse.json({
+      success: true,
+      doc_type,
+      repo: parsed.repo,
+      content,
+      generation_time_ms: generationTimeMs,
     });
-
   } catch (error) {
     console.error('API generation error:', error);
     return NextResponse.json(

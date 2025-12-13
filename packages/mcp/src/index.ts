@@ -33,6 +33,45 @@ const server = new Server(
   }
 );
 
+// Add this tool to your MCP server's src/index.ts
+
+// Tool: generate_comments
+server.tool(
+  'generate_comments',
+  'Add documentation comments to a source code file from GitHub. Supports JSDoc, TSDoc, docstrings, GoDoc, Javadoc, and more.',
+  {
+    file_url: z.string().describe('GitHub file URL (e.g., https://github.com/owner/repo/blob/main/src/file.ts)'),
+  },
+  async ({ file_url }) => {
+    const res = await fetch(`${API_BASE}/comments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`,
+      },
+      body: JSON.stringify({ file_url }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return {
+        content: [{
+          type: 'text',
+          text: `Error: ${data.error}`,
+        }],
+      };
+    }
+
+    return {
+      content: [{
+        type: 'text',
+        text: `# Documented: ${data.file.name}\n\n\`\`\`\n${data.documented_code}\n\`\`\``,
+      }],
+    };
+  }
+);
+
 // List available tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
