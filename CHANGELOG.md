@@ -8,40 +8,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- README generation from SourceDocs.AI
-- Generation time tracking for all API routes
-- Enhanced webhook logging capabilities
-- Survey completion status tracking for users
-- Stripe payment integration for Pro upgrades
-- User survey modal with database storage
-- GitHub OAuth authentication system
-- Supabase usage tracking with free tier (1 generation per month)
-- LICENSE and CODE_OF_CONDUCT document generation
-- CONTRIBUTING.md generation feature
-- Changelog generation functionality
-- Vercel Analytics and Speed Insights integration
-- Premium README preview with enhanced styling
-- HTML rendering support in markdown preview
+- Create PR button to push generated documentation directly to GitHub
+- Ability to create pull requests for generated markdown files
+- Code comments generator to main page
 
 ### Changed
-- Rename `/api/generate` endpoint to `/api/readme` for consistency
-- Improve README formatting and spacing
-- Enhance prompt quality for better documentation generation
-- Update React and Next.js to latest versions
-- Fix Tailwind v4 CSS compatibility
-- Update README generation prompts to level 11 quality
+- Publish sourcedocs-mcp version 1.0.1
 
 ### Fixed
-- Pro status display after account upgrade
-- Upgrade detection to verify from database instead of URL
-- Survey completion status persistence from database
-- Stripe API version compatibility
-- TypeScript compilation errors in auth.ts and github.ts
-- Code of conduct email placeholder formatting
-- Footer JSX syntax issues
-- License detection to not assume MIT by default
+- API and MCP capabilities for comment generation
+- Header references in generated documentation
+- Spacing between code declarations
+- Multiple compilation errors
+- Various bug fixes for improved stability
 
-### Security
-- Add user authentication and authorization
-- Implement secure payment processing with Stripe
-- Add database-backed user session management
+## [1.0.1] - 2025-12-12
+
+### Added
+- Stripe Customer Portal for subscription plan management
+- Admin dashboard with comprehensive metrics including source and plan breakdowns
+- API key management system with improved error messages
+- Public API routes with authentication
+- Pricing UI with plan selection
+- Admin badge in header for administrative access
+
+### Changed
+- Make raw markdown format the default output, with JSON as optional
+- Update all API routes to support plan-based access control
+- Improve checkout API to handle empty requests with default plan
+
+### Fixed
+- JSX parsing issues in settings page
+- Parameter naming in user creation functions
+- Tailwind class parsing issues in admin interface
+- Doc types query to use correct result variable
+
+## [1.0.0] - 2025-12-12
+
+### Added
+- Initial release of SourceDocs platform
+- Core documentation generation functionality
+- MCP (Model Context Protocol) package
+- Generation time tracking for all API routes
+- Webhook logging system
+- User survey completion and Stripe integration fields
+- LICENSE and Commercial License Agreement
+- Generated project documentation (README, CHANGELOG, CONTRIBUTING, CODE_OF_CONDUCT)
+- Dependency management with automated security updates
+
+[Unreleased]: https://github.com/sourcedocsai/sourcedocs/compare/1.0.1...HEAD
+[1.0.1]: https://github.com/sourcedocsai/sourcedocs/compare/1.0.0...1.0.1
+[1.0.0]: https://github.com/sourcedocsai/sourcedocs/commits/1.0.0
