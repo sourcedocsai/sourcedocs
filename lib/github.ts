@@ -30,6 +30,16 @@ function getHeaders(): Record<string, string> {
  * Parse a GitHub repository URL to extract owner and repo name
  * Supports various URL formats including .git suffix
  */
+/**
+ * Strict validation for GitHub owner/repo names:
+ * - Alphanumeric, '-', '_', and '.' only
+ * - No slashes, path traversal, spaces, or control characters
+ */
+function isValidGitHubOwnerRepo(str: string): boolean {
+  // 1-100 chars, only GitHub-legal characters
+  return /^[A-Za-z0-9\-_.]{1,100}$/.test(str);
+}
+
 export function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   // Handle various GitHub URL formats
   const patterns = [
@@ -40,9 +50,14 @@ export function parseGitHubUrl(url: string): { owner: string; repo: string } | n
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match) {
+      const owner = match[1];
+      const repo = match[2].replace(/\.git$/, '');
+      if (!isValidGitHubOwnerRepo(owner) || !isValidGitHubOwnerRepo(repo)) {
+        return null;
+      }
       return {
-        owner: match[1],
-        repo: match[2].replace(/\.git$/, ''),
+        owner,
+        repo,
       };
     }
   }
