@@ -213,9 +213,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { owner, repo, content, docType, filePath, baseBranch } = body;
 
+    // Validate owner and repo names: GitHub allows only alphanumeric characters, dashes and underscores; no path traversal etc.
+    const githubNameRegex = /^[a-zA-Z0-9-_.]+$/;
     if (!owner || !repo || !content || !docType) {
       return NextResponse.json(
         { error: 'Missing required fields: owner, repo, content, docType' },
+        { status: 400 }
+      );
+    }
+    if (!githubNameRegex.test(owner) || !githubNameRegex.test(repo)) {
+      return NextResponse.json(
+        { error: 'Invalid owner or repository name' },
         { status: 400 }
       );
     }
