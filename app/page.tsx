@@ -10,16 +10,8 @@ import { track } from '@vercel/analytics';
 import mermaid from 'mermaid';
 import { SurveyModal } from '@/components/survey-modal';
 
-/**
- * Document types supported by SourceDocs
- * Each type has its own endpoint, output key, and UI configuration
- */
 type DocType = 'readme' | 'changelog' | 'contributing' | 'license' | 'codeofconduct' | 'comments' | 'classdiagram';
 
-/**
- * Configuration for each document type
- * Controls the API endpoint, response parsing, and UI display
- */
 const docConfig: Record<DocType, {
   endpoint: string;
   label: string;
@@ -78,9 +70,6 @@ const docConfig: Record<DocType, {
   },
 };
 
-/**
- * Parse a GitHub repository URL to extract owner and repo name
- */
 function parseRepoUrl(url: string): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
   if (!match) return null;
@@ -90,10 +79,6 @@ function parseRepoUrl(url: string): { owner: string; repo: string } | null {
   };
 }
 
-/**
- * Parse a GitHub file URL to extract the file path and branch
- * Used for code comments which target specific files
- */
 function parseFileUrl(url: string): { filePath: string; branch: string } | null {
   const match = url.match(/github\.com\/[^\/]+\/[^\/]+\/blob\/([^\/]+)\/(.+)$/);
   if (!match) return null;
@@ -103,9 +88,6 @@ function parseFileUrl(url: string): { filePath: string; branch: string } | null 
   };
 }
 
-/**
- * Success banner shown when a PR is created successfully
- */
 function PrSuccessBanner({ prResult }: { prResult: { url: string; number: number; file: string } }) {
   return (
     <div className="px-4 py-3 border-b border-zinc-800 bg-green-900/20">
@@ -117,9 +99,6 @@ function PrSuccessBanner({ prResult }: { prResult: { url: string; number: number
   );
 }
 
-/**
- * Error banner shown when PR creation fails
- */
 function PrErrorBanner({ message }: { message: string }) {
   return (
     <div className="px-4 py-3 border-b border-zinc-800 bg-red-900/20">
@@ -128,9 +107,6 @@ function PrErrorBanner({ message }: { message: string }) {
   );
 }
 
-/**
- * Metadata banner for class diagrams showing analysis results
- */
 function DiagramMetaBanner({ classes, relationships, language }: { classes: number; relationships: number; language: string | null }) {
   return (
     <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-800/50">
@@ -143,45 +119,32 @@ function DiagramMetaBanner({ classes, relationships, language }: { classes: numb
   );
 }
 
-/**
- * Main content component containing the SourceDocs UI
- */
 function HomeContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const upgraded = searchParams.get('upgraded');
   const canceled = searchParams.get('canceled');
 
-  // Form and output state
   const [url, setUrl] = useState('');
   const [output, setOutput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [docType, setDocType] = useState<DocType>('readme');
-  
-  // User state
   const [usage, setUsage] = useState<{ used: number; limit: number } | null>(null);
   const [showSurvey, setShowSurvey] = useState(false);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  
-  // File info for code comments
   const [fileInfo, setFileInfo] = useState<{ name: string; path: string } | null>(null);
-  
-  // Diagram metadata for class diagrams
   const [diagramMeta, setDiagramMeta] = useState<{ classes: number; relationships: number; language: string | null } | null>(null);
-  
-  // PR creation state
   const [prLoading, setPrLoading] = useState(false);
   const [prResult, setPrResult] = useState<{ url: string; number: number; file: string } | null>(null);
   const [prError, setPrError] = useState('');
   
-  // Mermaid rendering ref
   const diagramRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Mermaid with dark theme
+  // Initialize Mermaid
   useEffect(() => {
     mermaid.initialize({
       startOnLoad: false,
@@ -200,27 +163,19 @@ function HomeContent() {
         border2: '#71717a',
         classText: '#e4e4e7',
       },
-      flowchart: {
-        htmlLabels: true,
-        curve: 'basis',
-      },
     });
   }, []);
 
-  // Render Mermaid diagram when output changes
+  // Render Mermaid diagram
   useEffect(() => {
     if (docType === 'classdiagram' && output && diagramRef.current) {
-      // Clear previous content
       diagramRef.current.innerHTML = '';
-      
-      // Generate unique ID for this render
       const diagramId = 'class-diagram-' + Date.now();
       
       mermaid.render(diagramId, output)
         .then(({ svg }) => {
           if (diagramRef.current) {
             diagramRef.current.innerHTML = svg;
-            // Make SVG responsive
             const svgElement = diagramRef.current.querySelector('svg');
             if (svgElement) {
               svgElement.style.maxWidth = '100%';
@@ -228,17 +183,15 @@ function HomeContent() {
             }
           }
         })
-        .catch(err => {
+        .catch((err) => {
           console.error('Mermaid rendering error:', err);
           if (diagramRef.current) {
-            // Show raw code if rendering fails
-            diagramRef.current.innerHTML = '<pre class="text-sm text-red-400 p-4">Diagram rendering failed. Raw Mermaid code:\n\n' + output + '</pre>';
+            diagramRef.current.innerHTML = '<pre class="text-sm text-red-400 p-4">Diagram rendering failed. Raw code:\n\n' + output + '</pre>';
           }
         });
     }
   }, [output, docType]);
 
-  // Fetch user status on session change
   useEffect(() => {
     if (session) {
       fetchUserStatus();
@@ -260,9 +213,6 @@ function HomeContent() {
     }
   };
 
-  /**
-   * Handle document generation
-   */
   const handleGenerate = async () => {
     if (!url.trim()) return;
     if (!session) {
@@ -300,21 +250,17 @@ function HomeContent() {
         return;
       }
 
-      // Extract content based on document type
       const content = data[config.key] || data.content || data.documentedCode || data.diagram;
       setOutput(content);
 
-      // Update usage display
       if (data.usage !== undefined && data.limit !== undefined) {
         setUsage({ used: data.usage, limit: data.limit });
       }
 
-      // Store file info for code comments
       if (docType === 'comments' && data.filename) {
         setFileInfo({ name: data.filename, path: data.path });
       }
 
-      // Store diagram metadata for class diagrams
       if (docType === 'classdiagram') {
         setDiagramMeta({
           classes: data.classes || 0,
@@ -323,10 +269,8 @@ function HomeContent() {
         });
       }
 
-      // Track the generation event
       track('generate', { docType });
 
-      // Show survey for free users after generation
       if (!surveyCompleted && !isPro) {
         setShowSurvey(true);
       }
@@ -337,26 +281,16 @@ function HomeContent() {
     }
   };
 
-  /**
-   * Copy output to clipboard
-   * For class diagrams, wraps in markdown code fence
-   */
   const handleCopy = async () => {
     let content = output;
-    
-    // Wrap class diagrams in markdown code fence for easy pasting
     if (docType === 'classdiagram') {
       content = '```mermaid\n' + output + '\n```';
     }
-    
     await navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  /**
-   * Download output as a file
-   */
   const handleDownload = () => {
     let filename: string;
     let content: string;
@@ -383,9 +317,6 @@ function HomeContent() {
     window.URL.revokeObjectURL(downloadUrl);
   };
 
-  /**
-   * Create a Pull Request with the generated content
-   */
   const handleCreatePR = async () => {
     const parsed = parseRepoUrl(url);
     if (!parsed) {
@@ -412,7 +343,6 @@ function HomeContent() {
         docType,
       };
 
-      // For code comments, include the file path and branch from the URL
       if (docType === 'comments') {
         const fileData = parseFileUrl(url);
         if (!fileData) {
@@ -459,9 +389,6 @@ function HomeContent() {
     setShowSurvey(false);
   };
 
-  /**
-   * Reset state when switching document types
-   */
   const handleDocTypeChange = (type: DocType) => {
     setDocType(type);
     setUrl('');
@@ -475,7 +402,6 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
-      {/* Header */}
       <header className="border-b border-zinc-800 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-semibold">SourceDocs.ai</h1>
@@ -497,12 +423,10 @@ function HomeContent() {
         </div>
       </header>
 
-      {/* Hero Section */}
       <section className="max-w-4xl mx-auto px-6 py-16 text-center">
         <h2 className="text-4xl font-bold mb-4">Documentation in seconds, not hours</h2>
         <p className="text-zinc-400 text-lg mb-10">Paste a GitHub URL. Get professional docs. That is it.</p>
 
-        {/* Document Type Selector */}
         <div className="flex flex-wrap justify-center gap-2 mb-4">
           {(Object.keys(docConfig) as DocType[]).map((type) => (
             <button
@@ -517,7 +441,6 @@ function HomeContent() {
 
         <p className="text-zinc-500 text-sm mb-6">{docConfig[docType].description}</p>
 
-        {/* URL Input */}
         <div className="flex gap-3 max-w-2xl mx-auto">
           <input
             type="text"
@@ -536,7 +459,6 @@ function HomeContent() {
           </button>
         </div>
 
-        {/* Error Display */}
         {error && (
           <div className="mt-4 text-red-400 text-sm">
             {error}
@@ -558,11 +480,9 @@ function HomeContent() {
         )}
       </section>
 
-      {/* Output Section */}
       {output && (
         <section className="max-w-4xl mx-auto px-6 pb-16">
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-            {/* Output Header with Actions */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
               <span className="text-sm text-zinc-400">{fileInfo ? (fileInfo.name + ' (' + fileInfo.path + ')') : docConfig[docType].label}</span>
               <div className="flex gap-2">
@@ -572,20 +492,13 @@ function HomeContent() {
               </div>
             </div>
 
-            {/* Diagram Metadata Banner (for class diagrams) */}
             {docType === 'classdiagram' && diagramMeta && (
-              <DiagramMetaBanner 
-                classes={diagramMeta.classes} 
-                relationships={diagramMeta.relationships} 
-                language={diagramMeta.language} 
-              />
+              <DiagramMetaBanner classes={diagramMeta.classes} relationships={diagramMeta.relationships} language={diagramMeta.language} />
             )}
 
-            {/* PR Result/Error Banners */}
             {prResult && <PrSuccessBanner prResult={prResult} />}
             {prError && <PrErrorBanner message={prError} />}
 
-            {/* Output Content */}
             <div className="p-6 max-h-[600px] overflow-auto">
               {docType === 'classdiagram' ? (
                 <div ref={diagramRef} className="flex justify-center items-center min-h-[300px]" />
@@ -601,15 +514,11 @@ function HomeContent() {
         </section>
       )}
 
-      {/* Survey Modal */}
       {showSurvey && <SurveyModal onComplete={handleSurveyComplete} onClose={() => setShowSurvey(false)} />}
     </main>
   );
 }
 
-/**
- * Main page component with Suspense boundary
- */
 export default function Home() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center"><p className="text-zinc-400">Loading...</p></div>}>
