@@ -213,11 +213,32 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { owner, repo, content, docType, filePath, baseBranch } = body;
 
-    // Validate owner and repo names: GitHub allows only alphanumeric characters, dashes and underscores; no path traversal etc.
-    const githubNameRegex = /^[a-zA-Z0-9-_.]+$/;
-    if (!owner || !repo || !content || !docType) {
+    // Validate owner and repo: must be valid GitHub login/repo names
+    const validName = /^[A-Za-z0-9_.-]+$/;
+    if (
+      !owner || !repo || !content || !docType ||
+      !validName.test(owner) || !validName.test(repo)
+    ) {
       return NextResponse.json(
-        { error: 'Missing required fields: owner, repo, content, docType' },
+        { error: 'Missing or invalid required fields: owner, repo, content, docType' },
+        { status: 400 }
+      );
+    }
+
+    // Validate baseBranch, if provided: must match valid branch name pattern
+    // (GitHub branch names are more permissive, but we'll limit to safe subset)
+    if (baseBranch && !/^[A-Za-z0-9/_\-.]+$/.test(baseBranch)) {
+      return NextResponse.json(
+        { error: 'Invalid baseBranch format' },
+        { status: 400 }
+      );
+    }
+
+    // Validate 'owner' and 'repo' fields to prevent SSRF and other injection attacks
+    const validNamePattern = /^[a-zA-Z0-9-_.]+$/;
+    if (!validNamePattern.test(owner) || !validNamePattern.test(repo)) {
+      return NextResponse.json(
+        { error: "Invalid owner or repo. Must match /^[a-zA-Z0-9-_.]+$/" },
         { status: 400 }
       );
     }
