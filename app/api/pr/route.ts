@@ -213,9 +213,34 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { owner, repo, content, docType, filePath, baseBranch } = body;
 
+    // Validate GitHub owner and repo according to GitHub's naming rules
+    function isValidGithubOwner(str: string): boolean {
+      // Owner can be username or org: [a-zA-Z\d](?:[a-zA-Z\d]|-(?=[a-zA-Z\d])){0,38}
+      return typeof str === 'string'
+        && /^[a-zA-Z\d](?:[a-zA-Z\d\-]{0,38})$/.test(str);
+    }
+    function isValidGithubRepo(str: string): boolean {
+      // Repo: must not be empty, max 100, only allowed chars, no path traversal
+      return typeof str === 'string'
+        && /^[A-Za-z0-9_.\-]{1,100}$/.test(str)
+        && !str.includes('..') && !str.startsWith('.') && !str.endsWith('.');
+    }
+
     if (!owner || !repo || !content || !docType) {
       return NextResponse.json(
         { error: 'Missing required fields: owner, repo, content, docType' },
+        { status: 400 }
+      );
+    }
+    if (!isValidGithubOwner(owner)) {
+      return NextResponse.json(
+        { error: 'Invalid GitHub owner format' },
+        { status: 400 }
+      );
+    }
+    if (!isValidGithubRepo(repo)) {
+      return NextResponse.json(
+        { error: 'Invalid GitHub repo format' },
         { status: 400 }
       );
     }
