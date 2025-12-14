@@ -213,6 +213,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { owner, repo, content, docType, filePath, baseBranch } = body;
 
+    // Validate owner and repo to prevent SSRF and access restriction bypass
+    const validName = /^[A-Za-z0-9_.-]+$/;
+    if (!validName.test(owner) || !validName.test(repo)) {
+      return NextResponse.json(
+        { error: 'Invalid owner or repo' },
+        { status: 400 }
+      );
+    }
+
     if (!owner || !repo || !content || !docType) {
       return NextResponse.json(
         { error: 'Missing required fields: owner, repo, content, docType' },
