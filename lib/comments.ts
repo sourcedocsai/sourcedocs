@@ -188,11 +188,47 @@ export function parseGitHubFileUrl(url: string): {
     return null;
   }
   
+  const owner = match[1];
+  const repo = match[2];
+  const branch = match[3];
+  const path = match[4];
+
+  // GitHub owner and repo names: alphanumeric, dashes, underscores, and dots
+  const validName = /^[A-Za-z0-9._-]+$/;
+  if (!validName.test(owner) || !validName.test(repo)) {
+    return null;
+  }
+
+  // Branch names in GitHub can include most ASCII except certain characters,
+  // but for SSRF safety, we will be conservative. Disallow '/' (shouldn't be present), '..', null, and any dangerous chars.
+  if (
+    branch.includes('..') ||
+    branch.includes('\0') ||
+    branch.includes('%00') ||
+    branch.startsWith('/') ||
+    branch.includes('\\')
+  ) {
+    return null;
+  }
+
+  // Path: no `..`, no leading slash, no nulls, no encoded-`..`
+  if (
+    path.startsWith('/') ||
+    path.includes('..') ||
+    path.includes('\0') ||
+    /%2e|%2E/.test(path) || // encoded ".", could be used for traversal
+    /%2f|%2F/.test(path)    // encoded "/"
+  ) {
+    return null;
+  }
+  // Optionally require at least one `/` (subdir/file), your call:
+  // if (!path.includes('/')) return null;
+
   return {
-    owner: match[1],
-    repo: match[2],
-    branch: match[3],
-    path: match[4],
+    owner,
+    repo,
+    branch,
+    path,
   };
 }
 
