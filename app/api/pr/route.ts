@@ -234,6 +234,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate 'owner' and 'repo' fields to prevent SSRF and other injection attacks
+    const validNamePattern = /^[a-zA-Z0-9-_.]+$/;
+    if (!validNamePattern.test(owner) || !validNamePattern.test(repo)) {
+      return NextResponse.json(
+        { error: "Invalid owner or repo. Must match /^[a-zA-Z0-9-_.]+$/" },
+        { status: 400 }
+      );
+    }
+
     // Determine the target filename based on document type
     let filename: string;
     if (docType === 'comments') {
