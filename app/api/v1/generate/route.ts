@@ -67,6 +67,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate URL requirements based on document type
+    let parsedRepo = null;
+    if (repo_url) {
+      parsedRepo = parseGitHubUrl(repo_url);
+      if (!parsedRepo) {
+        return NextResponse.json({ error: 'Invalid or unsupported GitHub repository URL/owner/repo' }, { status: 400 });
+      }
+    }
     if (doc_type === 'comments') {
       if (!file_url) {
         return NextResponse.json(

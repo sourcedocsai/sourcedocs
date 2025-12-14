@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const parsed = parseGitHubUrl(url);
     if (!parsed) {
-      return NextResponse.json({ error: 'Invalid GitHub URL' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid or unsupported GitHub URL/owner/repo' }, { status: 400 });
     }
 
     const githubId = (session.user as any).githubId;
