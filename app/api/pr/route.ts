@@ -242,6 +242,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (!githubNameRegex.test(owner) || !githubNameRegex.test(repo)) {
+      return NextResponse.json(
+        { error: 'Invalid owner or repository name' },
+        { status: 400 }
+      );
+    }
 
     // Determine the target filename based on document type
     let filename: string;
