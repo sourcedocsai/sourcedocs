@@ -4,6 +4,17 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
+// CSS to hide scrollbars while maintaining scroll functionality
+const hideScrollbarStyles = `
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+`;
+
 interface Metrics {
   overview: {
     totalUsers: number;
@@ -193,6 +204,7 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
+      <style>{hideScrollbarStyles}</style>
       <header className="border-b border-zinc-800 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -328,9 +340,9 @@ export default function AdminPage() {
             {/* Recent Activity */}
             <div className="grid md:grid-cols-2 gap-6">
               {/* Recent Generations */}
-              <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+              <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 overflow-hidden">
                 <h3 className="text-md font-semibold mb-4">Recent Generations</h3>
-                <div className="space-y-3 max-h-80 overflow-y-auto">
+                <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-hide">
                   {metrics.recentGenerations.map((gen, i) => (
                     <div key={i} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0">
                       <div className="flex-1 min-w-0">
@@ -351,9 +363,9 @@ export default function AdminPage() {
               </section>
 
               {/* Recent Users */}
-              <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+              <section className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 overflow-hidden">
                 <h3 className="text-md font-semibold mb-4">Recent Signups</h3>
-                <div className="space-y-1 max-h-80 overflow-y-auto">
+                <div className="space-y-1 max-h-80 overflow-y-auto scrollbar-hide">
                   {metrics.recentUsers.map((user, i) => (
                     <UserRow
                       key={i}
