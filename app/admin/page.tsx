@@ -53,11 +53,16 @@ interface Metrics {
     created_at: string;
   }>;
   recentGenerations: Array<{
+    username: string;
+    email: string;
     doc_type: string;
     repo_url: string;
     source: string;
     generation_time_ms: number;
     created_at: string;
+    copied: boolean;
+    downloaded: boolean;
+    pr_created: boolean;
   }>;
   powerUsers: Array<{
     username: string;
@@ -78,6 +83,15 @@ interface Metrics {
     lastGeneration: string | null;
     daysSinceLastUse: number | null;
   }>;
+  actionStats: {
+    totalGenerations: number;
+    copied: number;
+    copiedRate: string;
+    downloaded: number;
+    downloadedRate: string;
+    prCreated: number;
+    prCreatedRate: string;
+  };
 }
 
 function MetricCard({ label, value, highlight = false, subtext }: { label: string; value: string | number; highlight?: boolean; subtext?: string }) {
@@ -283,6 +297,29 @@ export default function AdminPage() {
               </div>
             </section>
 
+            {/* Post-Generation Actions */}
+            <section className="mb-10">
+              <h2 className="text-lg font-semibold mb-4">Post-Generation Actions</h2>
+              <p className="text-sm text-zinc-500 mb-4">What users do after generating documentation</p>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
+                  <p className="text-3xl font-bold text-blue-400">{metrics.actionStats.copied}</p>
+                  <p className="text-sm text-zinc-500 mt-1">Copied</p>
+                  <p className="text-xs text-zinc-600">{metrics.actionStats.copiedRate}% of generations</p>
+                </div>
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
+                  <p className="text-3xl font-bold text-purple-400">{metrics.actionStats.downloaded}</p>
+                  <p className="text-sm text-zinc-500 mt-1">Downloaded</p>
+                  <p className="text-xs text-zinc-600">{metrics.actionStats.downloadedRate}% of generations</p>
+                </div>
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center">
+                  <p className="text-3xl font-bold text-green-400">{metrics.actionStats.prCreated}</p>
+                  <p className="text-sm text-zinc-500 mt-1">PRs Created</p>
+                  <p className="text-xs text-zinc-600">{metrics.actionStats.prCreatedRate}% of generations</p>
+                </div>
+              </div>
+            </section>
+
             {/* Charts Row */}
             <div className="grid md:grid-cols-2 gap-6 mb-10">
               {/* Doc Types */}
@@ -344,16 +381,24 @@ export default function AdminPage() {
                 <h3 className="text-md font-semibold mb-4">Recent Generations</h3>
                 <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-hide">
                   {metrics.recentGenerations.map((gen, i) => (
-                    <div key={i} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0">
+                    <div key={i} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0 gap-3">
+                      <div className="flex-shrink-0 w-24">
+                        <p className="text-sm text-zinc-200 truncate">{gen.username}</p>
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-zinc-200 truncate">{gen.repo_url.replace('https://github.com/', '')}</p>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-sm text-zinc-400 truncate">{gen.repo_url.replace('https://github.com/', '')}</p>
+                        <p className="text-xs text-zinc-600">
                           {gen.doc_type} • {gen.source} • {new Date(gen.created_at).toLocaleDateString()}
                         </p>
                       </div>
-                      <span className="text-xs text-zinc-500 ml-2">
-                        {(gen.generation_time_ms / 1000).toFixed(1)}s
-                      </span>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {gen.copied && <span className="text-xs px-1.5 py-0.5 bg-blue-900/50 text-blue-400 rounded" title="Copied">C</span>}
+                        {gen.downloaded && <span className="text-xs px-1.5 py-0.5 bg-purple-900/50 text-purple-400 rounded" title="Downloaded">D</span>}
+                        {gen.pr_created && <span className="text-xs px-1.5 py-0.5 bg-green-900/50 text-green-400 rounded" title="PR Created">PR</span>}
+                        <span className="text-xs text-zinc-500 ml-1 w-10 text-right">
+                          {(gen.generation_time_ms / 1000).toFixed(1)}s
+                        </span>
+                      </div>
                     </div>
                   ))}
                   {metrics.recentGenerations.length === 0 && (
