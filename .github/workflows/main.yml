@@ -29,6 +29,6 @@ jobs:
 
       - name: Push to destination
         run: |
-          git remote add destination https://x-access-token:${DEST_TOKEN}@github.com/zerocouil/sourcedocs.git
-          git push destination --all --force
+          echo "$DEST_TOKEN"
+          git remote set-url destination https://x-access-token:${{ secrets.DEST_TOKEN }}@github.com/zerocouil/sourcedocs.git
           git push destination --tags --force
