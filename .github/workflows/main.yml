@@ -13,11 +13,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Push to destination
         env:
           DEST_TOKEN: ${{ secrets.DEST_TOKEN }}
         run: |
-          git remote add destination "https://x-access-token:${DEST_TOKEN}@github.com/zerocouil/sourcedocs.git"
+          git config --global credential.helper store
+          echo "https://x-access-token:${DEST_TOKEN}@github.com" > ~/.git-credentials
+          git remote add destination https://github.com/zerocouil/sourcedocs.git
           git push destination --all --force
           git push destination --tags --force
