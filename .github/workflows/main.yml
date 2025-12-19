@@ -1,4 +1,4 @@
-name: Mirror to destination
+name: Mirror to Destination
 
 on:
   push:
@@ -26,19 +26,9 @@ jobs:
           fi
         env:
           DEST_TOKEN: ${{ secrets.DEST_TOKEN }}
-          
-      - name: Set up git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "actions@github.com"
-          
-          # git remote set-url origin https://x-access-token:${{ secrets.DEST_TOKEN }}@github.com/zerocouil/sourcedocs.git
-        
+                  
       - name: Push to destination
         run: |
-        
-          # add destination remote using PAT (won't be printed in logs)
-          git remote add destination "https://x-access-token:${DEST_TOKEN}@github.com/zerocouil/sourcedocs.git"
-          
-          # push everything (branches, tags); use --mirror or choose specific refs
+          git remote remove destination || true 
+          git remote add destination https://x-access-token:${DEST_TOKEN}@github.com/zerocouil/sourcedocs.git
           git push --mirror destination
