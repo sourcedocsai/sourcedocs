@@ -26,9 +26,15 @@ jobs:
           fi
         env:
           DEST_TOKEN: ${{ secrets.DEST_TOKEN }}
-
+          
+      - name: Set up git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.DEST_TOKEN }}@github.com/zerocouil/sourcedocs.git
+        
       - name: Push to destination
         run: |
-          echo "$DEST_TOKEN"
+          echo "${{ secrets.DEST_TOKEN }}"
           git remote add destination https://x-access-token:${{ secrets.DEST_TOKEN }}@github.com/zerocouil/sourcedocs.git || git remote set-url destination https://x-access-token:${{ secrets.DEST_TOKEN }}@github.com/zerocouil/sourcedocs.git
           git push destination --tags --force
