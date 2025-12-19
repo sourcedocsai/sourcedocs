@@ -24,12 +24,10 @@ jobs:
 
       - name: Clone Source
         run: |
-          git clone --mirror https://github.com/sourcedocsai/sourcedocs.git
-          cd sourcedocs.git
           pwd
+          ls -la
           
       - name: Mirror Source to Destination
         run: |
-          git fetch -p origin
           git remote add destination https://x-access-token:${{ secrets.DEST_TOKEN }}@github.com/zerocouil/sourcedocs.git
           git push --mirror destination
