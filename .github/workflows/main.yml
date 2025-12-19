@@ -1,10 +1,7 @@
-name: Mirror to Destination
+name: Mirror to destination
 
 on:
   push:
-    branches:
-      - '**'
-  delete:
     branches:
       - '**'
   workflow_dispatch:
@@ -16,18 +13,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-     
-      - name: Setup Git
-        run: |
-          git config user.name "sourcedocsai (Gitub Actions)" 
-          git config user.email "sourcedocsai@railcloudsoftware.com"
 
-      - name: Clone Source
+      - name: Push to destination
+        env:
+          DEST_TOKEN: ${{ secrets.DEST_TOKEN }}
         run: |
-          pwd
-          ls -la
-          
-      - name: Mirror Source to Destination
-        run: |
-          git remote add destination https://x-access-token:${{ secrets.DEST_TOKEN }}@github.com/zerocouil/sourcedocs.git
-          git push --mirror destination
+          git remote add destination "https://x-access-token:${DEST_TOKEN}@github.com/zerocouil/sourcedocs.git"
+          git push destination --all --force
+          git push destination --tags --force
