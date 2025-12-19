@@ -18,11 +18,12 @@ jobs:
           fetch-depth: 0
      
       - name: Setup Git
+        run: |
           git config user.name "sourcedocsai (GitHub Actions)" 
           git config user.email "sourcedocsai+actions@users.noreply.github.com"
           git remote remove destination
                   
-      - name: Push to destination
+      - name: Push to Mirror
         run: |
           git remote add destination https://x-access-token:${{ secrets.DEST_TOKEN }}@github.com/zerocouil/sourcedocs.git
           git push --mirror destination
