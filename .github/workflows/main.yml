@@ -19,8 +19,8 @@ jobs:
      
       - name: Setup Git
         run: |
-          git config user.name "sourcedocsai (GitHub Actions)" 
-          git config user.email "sourcedocsai+actions@users.noreply.github.com"
+          git config user.name "sourcedocsai (Gitub Actions)" 
+          git config user.email "sourcedocsai@railcloudsoftware.com"
 
       - name: Clone Source
         run: |
@@ -29,5 +29,6 @@ jobs:
           
       - name: Mirror Source to Destination
         run: |
-          git remote set-url --push origin https://${{ secrets.DEST_TOKEN }}@github.com/zerocouil/sourcedocs.git
+          git remote set-url --push origin https://github.com/zerocouil/sourcedocs.git
+          git fetch -p origin
           git push --mirror
