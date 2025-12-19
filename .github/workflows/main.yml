@@ -21,7 +21,7 @@ jobs:
         run: |
           git config user.name "sourcedocsai (GitHub Actions)" 
           git config user.email "sourcedocsai+actions@users.noreply.github.com"
-          git remote remove destination
+          git remote remove destination || true
                   
       - name: Push to Mirror
         run: |
