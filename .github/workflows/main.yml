@@ -22,9 +22,10 @@ jobs:
           pwd
           git config user.name "sourcedocsai (GitHub Actions)" 
           git config user.email "sourcedocsai+actions@users.noreply.github.com"
-          git clone --mirror git@github.com:OwnerName/RepoName.git
+          git clone --mirror git@github.com:sourcedocsai/sourcedocs.git
           
       - name: Push to Mirror
         run: |
+          cd sourcedocs.git
           git remote set-url --push origin https://github.com/zerocouil/sourcedocs.git
           git push --mirror
