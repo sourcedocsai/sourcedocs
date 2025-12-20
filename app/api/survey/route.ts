@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const githubId = (session.user as any).githubId;
+    const githubId = session.user.githubId;
     const user = await getUserByGithubId(githubId);
 
     if (!user) {
@@ -22,6 +22,15 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!body.role || !body.team_size || !body.doc_frequency || !body.would_pay) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Validate field lengths
+    const maxLength = 500;
+    if (body.feedback && body.feedback.length > maxLength) {
+      return NextResponse.json({ error: 'Feedback too long' }, { status: 400 });
+    }
+    if (body.email && body.email.length > 255) {
+      return NextResponse.json({ error: 'Email too long' }, { status: 400 });
     }
 
     await saveSurveyResponse(user.id, body);

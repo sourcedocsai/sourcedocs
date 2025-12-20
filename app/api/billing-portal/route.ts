@@ -11,7 +11,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const githubId = (session.user as any).githubId;
+    const githubId = session.user.githubId;
     const user = await getUserByGithubId(githubId);
 
     if (!user) {

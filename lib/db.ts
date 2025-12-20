@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { supabaseAdmin, User, Generation, Plan } from './supabase';
 
 // Plan limits
@@ -308,12 +309,13 @@ export async function deleteApiKey(userId: string, keyId: string): Promise<void>
     .eq('user_id', userId);
 }
 
-// Helper function
+// Helper function - uses cryptographically secure random bytes
 function generateRandomString(length: number): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = randomBytes(length);
   let result = '';
   for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+    result += chars.charAt(bytes[i] % chars.length);
   }
   return result;
 }
@@ -331,6 +333,7 @@ export async function updateUserGithubToken(userId: string, token: string): Prom
 
   if (error) {
     console.error('Failed to update GitHub token:', error);
+    throw new Error(`Failed to update GitHub token: ${error.message}`);
   }
 }
 

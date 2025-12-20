@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid GitHub URL' }, { status: 400 });
     }
 
-    const githubId = (session.user as any).githubId;
+    const githubId = session.user.githubId;
     const user = await getUserByGithubId(githubId);
 
     if (!user) {

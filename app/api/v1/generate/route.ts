@@ -299,9 +299,11 @@ export async function POST(request: NextRequest) {
       } else if (error.message.includes('rate limit')) {
         message = 'GitHub API rate limit exceeded. Please try again later.';
         status = 429;
-      } else {
-        message = error.message;
+      } else if (error.message.includes('private') || error.message.includes('access')) {
+        message = 'Unable to access repository. Please ensure the repository is public or you have proper access.';
+        status = 403;
       }
+      // For unknown errors, use generic message (actual error already logged above)
     }
     
     return NextResponse.json({ error: message }, { status });

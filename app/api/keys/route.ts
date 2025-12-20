@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const githubId = (session.user as any).githubId;
+    const githubId = session.user.githubId;
     const user = await getUserByGithubId(githubId);
 
     if (!user) {
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const githubId = (session.user as any).githubId;
+    const githubId = session.user.githubId;
     const user = await getUserByGithubId(githubId);
 
     if (!user) {
@@ -61,7 +61,13 @@ export async function POST(request: NextRequest) {
     try {
       const body = await request.json();
       if (body.name) {
-        name = body.name;
+        if (typeof body.name !== 'string') {
+          return NextResponse.json({ error: 'Name must be a string' }, { status: 400 });
+        }
+        if (body.name.length > 100) {
+          return NextResponse.json({ error: 'Name must be 100 characters or less' }, { status: 400 });
+        }
+        name = body.name.trim();
       }
     } catch {
       // Empty body, use default name
@@ -76,7 +82,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Create API key error:', error);
     return NextResponse.json(
-      { error: `Failed to create API key: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { error: 'Failed to create API key' },
       { status: 500 }
     );
   }

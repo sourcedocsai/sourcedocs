@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const githubId = (session.user as any).githubId;
+    const githubId = session.user.githubId;
     const user = await getUserByGithubId(githubId);
 
     if (!user) {
