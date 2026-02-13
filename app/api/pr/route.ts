@@ -242,6 +242,18 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (!isValidGithubOwner(owner)) {
+      return NextResponse.json(
+        { error: 'Invalid GitHub owner format' },
+        { status: 400 }
+      );
+    }
+    if (!isValidGithubRepo(repo)) {
+      return NextResponse.json(
+        { error: 'Invalid GitHub repo format' },
+        { status: 400 }
+      );
+    }
 
     // Determine the target filename based on document type
     let filename: string;
